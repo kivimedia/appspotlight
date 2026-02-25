@@ -1,0 +1,50 @@
+{
+  "github": {
+    "webhookSecret": "",
+    "token": "",
+    "excludedRepos": [],
+    "allowedBranches": ["main", "master"]
+  },
+  "claude": {
+    "apiKey": "",
+    "defaultModel": "claude-sonnet-4-5-20250929",
+    "opusModel": "claude-opus-4-6",
+    "opusThreshold": 5000,
+    "maxInputTokens": 4000,
+    "maxOutputTokens": 2000
+  },
+  "wordpress": {
+    "baseUrl": "https://zivraviv.com",
+    "username": "",
+    "appPassword": "",
+    "appsParentSlug": "apps"
+  },
+  "supabase": {
+    "url": "",
+    "serviceKey": ""
+  },
+  "pipeline": {
+    "cooldownMinutes": 30,
+    "autoPublishThreshold": 90,
+    "minFileChangesForUpdate": 5
+  },
+  "screenshots": {
+    "desktopViewport": { "width": 1440, "height": 900 },
+    "mobileViewport": { "width": 390, "height": 844 },
+    "waitAfterLoadMs": 2000,
+    "maxScreenshots": 5,
+    "maxFileSizeKb": 200,
+    "maxWidthPx": 1200,
+    "format": "webp"
+  },
+  "budget": {
+    "maxCostPerRun": 3.00,
+    "maxWeeklyBudget": 25.00,
+    "maxMonthlyBudget": 75.00,
+    "alertAtPercent": 80
+  },
+  "watcher": {
+    "port": 3100
+  },
+  "deployUrlMap": {}
+}

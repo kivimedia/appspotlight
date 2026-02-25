@@ -1,0 +1,28 @@
+{
+  "name": "appspotlight",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Automated app portfolio generator for ZivRaviv.com",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "build:shared": "npm run build -w packages/shared",
+    "build:analyst": "npm run build -w packages/analyst",
+    "build:publisher": "npm run build -w packages/publisher",
+    "build:watcher": "npm run build -w packages/watcher",
+    "manual": "npx tsx scripts/run-manual.ts",
+    "backfill": "npx tsx scripts/backfill.ts",
+    "cost-report": "npx tsx scripts/cost-report.ts",
+    "start:watcher": "npm run start -w packages/watcher"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

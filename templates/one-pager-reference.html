@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChoirMind | ZivRaviv.com</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-dark: #0B0F1A;
+    --bg-card: #131829;
+    --bg-elevated: #1A2035;
+    --accent: #6C63FF;
+    --accent-bright: #8B83FF;
+    --accent-glow: rgba(108, 99, 255, 0.25);
+    --coral: #FF6B6B;
+    --teal: #4ECDC4;
+    --gold: #FFD93D;
+    --text-primary: #F0F0F5;
+    --text-secondary: #9CA3BE;
+    --text-muted: #6B7294;
+    --gradient-hero: linear-gradient(135deg, #0B0F1A 0%, #1A1040 40%, #0B0F1A 100%);
+    --gradient-accent: linear-gradient(135deg, #6C63FF, #4ECDC4);
+    --gradient-warm: linear-gradient(135deg, #FF6B6B, #FFD93D);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --font-display: 'Outfit', sans-serif;
+    --font-body: 'Source Serif 4', Georgia, serif;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    overflow-x: hidden;
+    line-height: 1.7;
+  }
+
+  /* ========== SITE HEADER (simulating ZivRaviv.com) ========== */
+  .site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(11, 15, 26, 0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(108, 99, 255, 0.1);
+    padding: 0 40px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .site-header .logo {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.3rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    letter-spacing: -0.02em;
+  }
+  .site-header .logo span { color: var(--accent); }
+  .site-header nav { display: flex; gap: 32px; align-items: center; }
+  .site-header nav a {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.3s;
+    letter-spacing: 0.02em;
+  }
+  .site-header nav a:hover { color: var(--text-primary); }
+  .site-header nav a.active { color: var(--accent-bright); }
+
+  /* ========== BREADCRUMB ========== */
+  .breadcrumb {
+    max-width: 1200px;
+    margin: 84px auto 0;
+    padding: 0 40px;
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+  .breadcrumb a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+  .breadcrumb a:hover { color: var(--accent-bright); }
+  .breadcrumb .sep { margin: 0 8px; opacity: 0.5; }
+
+  /* ========== HERO ========== */
+  .hero {
+    position: relative;
+    padding: 60px 40px 100px;
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1.1fr;
+    gap: 60px;
+    align-items: center;
+    min-height: 80vh;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -200px;
+    right: -100px;
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .hero-content { position: relative; z-index: 1; }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-elevated);
+    border: 1px solid rgba(108, 99, 255, 0.25);
+    border-radius: 100px;
+    padding: 6px 16px 6px 8px;
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--accent-bright);
+    margin-bottom: 28px;
+    animation: fadeInUp 0.8s ease-out;
+  }
+  .hero-badge .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--teal);
+    animation: pulse-dot 2s infinite;
+  }
+
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: 4rem;
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 24px;
+    animation: fadeInUp 0.8s ease-out 0.1s both;
+  }
+  .hero h1 .gradient-text {
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero .tagline {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 36px;
+    max-width: 480px;
+    animation: fadeInUp 0.8s ease-out 0.2s both;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    animation: fadeInUp 0.8s ease-out 0.3s both;
+  }
+
+  .btn-primary {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 14px 32px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    background: var(--gradient-accent);
+    color: white;
+    text-decoration: none;
+    transition: all 0.3s;
+    box-shadow: 0 4px 20px var(--accent-glow);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px var(--accent-glow);
+  }
+  .btn-secondary {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 14px 32px;
+    border-radius: 12px;
+    border: 1px solid rgba(108, 99, 255, 0.3);
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: all 0.3s;
+  }
+  .btn-secondary:hover {
+    border-color: var(--accent);
+    background: rgba(108, 99, 255, 0.08);
+  }
+
+  /* Hero Screenshot */
+  .hero-visual {
+    position: relative;
+    z-index: 1;
+    animation: fadeInUp 0.8s ease-out 0.4s both;
+  }
+  .screenshot-frame {
+    background: var(--bg-card);
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.06);
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03);
+    transform: perspective(1000px) rotateY(-4deg) rotateX(2deg);
+    transition: transform 0.5s;
+  }
+  .screenshot-frame:hover {
+    transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
+  }
+  .screenshot-bar {
+    height: 36px;
+    background: var(--bg-elevated);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 7px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .screenshot-bar .dot-r { width: 10px; height: 10px; border-radius: 50%; background: #FF5F57; }
+  .screenshot-bar .dot-y { width: 10px; height: 10px; border-radius: 50%; background: #FFBD2E; }
+  .screenshot-bar .dot-g { width: 10px; height: 10px; border-radius: 50%; background: #28CA42; }
+  .screenshot-bar .url-bar {
+    flex: 1;
+    margin-left: 12px;
+    height: 22px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.04);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+  .screenshot-content {
+    aspect-ratio: 16/10;
+    background: linear-gradient(135deg, #1a1040 0%, #0d1117 50%, #1a2035 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .screenshot-content::before {
+    content: '';
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(108,99,255,0.15), transparent 70%);
+  }
+  .mock-app-title {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    font-weight: 800;
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .mock-app-subtitle {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    position: relative;
+  }
+  .mock-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+  }
+  .mock-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 16px 12px;
+    text-align: center;
+  }
+  .mock-card .icon { font-size: 1.5rem; margin-bottom: 6px; }
+  .mock-card .label {
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  /* ========== PROBLEM / SOLUTION ========== */
+  .problem-solution {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 80px 40px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+  }
+  .ps-card {
+    padding: 44px;
+    border-radius: var(--radius);
+    position: relative;
+    overflow: hidden;
+  }
+  .ps-card.problem {
+    background: linear-gradient(135deg, #1c1015 0%, #1a1222 100%);
+    border: 1px solid rgba(255, 107, 107, 0.15);
+  }
+  .ps-card.solution {
+    background: linear-gradient(135deg, #0d1a1a 0%, #121a2a 100%);
+    border: 1px solid rgba(78, 205, 196, 0.15);
+  }
+  .ps-card .label {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 16px;
+  }
+  .ps-card.problem .label { color: var(--coral); }
+  .ps-card.solution .label { color: var(--teal); }
+  .ps-card h3 {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+  }
+  .ps-card p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    line-height: 1.8;
+  }
+
+  /* ========== FEATURES ========== */
+  .features {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 80px 40px 100px;
+  }
+  .section-header {
+    text-align: center;
+    margin-bottom: 60px;
+  }
+  .section-header .overline {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--accent-bright);
+    margin-bottom: 12px;
+  }
+  .section-header h2 {
+    font-family: var(--font-display);
+    font-size: 2.6rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+  .feature-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: var(--radius);
+    padding: 36px;
+    transition: all 0.4s;
+    position: relative;
+    overflow: hidden;
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-accent);
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .feature-card:hover {
+    border-color: rgba(108,99,255,0.2);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  }
+  .feature-card:hover::before { opacity: 1; }
+  .feature-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+  }
+  .feature-card:nth-child(1) .feature-icon { background: rgba(108, 99, 255, 0.12); }
+  .feature-card:nth-child(2) .feature-icon { background: rgba(78, 205, 196, 0.12); }
+  .feature-card:nth-child(3) .feature-icon { background: rgba(255, 107, 107, 0.12); }
+  .feature-card:nth-child(4) .feature-icon { background: rgba(255, 217, 61, 0.12); }
+  .feature-card h3 {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+  }
+  .feature-card p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+
+  /* ========== SCREENSHOT GALLERY ========== */
+  .gallery {
+    background: var(--bg-card);
+    border-top: 1px solid rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    padding: 100px 40px;
+  }
+  .gallery-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .gallery-scroll {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 60px;
+  }
+  .gallery-item {
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: all 0.4s;
+    background: var(--bg-elevated);
+  }
+  .gallery-item:hover {
+    transform: scale(1.03);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  }
+  .gallery-item .screen-label {
+    padding: 12px 16px;
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-top: 1px solid rgba(255,255,255,0.04);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .gallery-item .screen-label .num {
+    background: var(--accent);
+    color: white;
+    font-size: 0.65rem;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+  .gallery-mock {
+    aspect-ratio: 16/10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    position: relative;
+  }
+  .gallery-mock.screen-1 {
+    background: linear-gradient(135deg, #0f1a2e, #1a1040);
+  }
+  .gallery-mock.screen-2 {
+    background: linear-gradient(135deg, #1a0f20, #0f1a2e);
+  }
+  .gallery-mock.screen-3 {
+    background: linear-gradient(135deg, #0f1e1a, #0f1a2e);
+  }
+  .mock-ui-element {
+    width: 80%;
+    height: 12px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.06);
+    margin-bottom: 10px;
+  }
+  .mock-ui-element.short { width: 50%; }
+  .mock-ui-element.accent { background: rgba(108, 99, 255, 0.2); }
+  .mock-ui-element.teal { background: rgba(78, 205, 196, 0.15); }
+  .mock-ui-element.warm { background: rgba(255, 107, 107, 0.15); }
+  .mock-ui-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 80%;
+    margin-top: 12px;
+  }
+  .mock-ui-box {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* ========== WHO IT'S FOR ========== */
+  .audience {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 100px 40px;
+  }
+  .audience-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 60px;
+  }
+  .audience-card {
+    text-align: center;
+    padding: 40px 28px;
+    border-radius: var(--radius);
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: all 0.4s;
+  }
+  .audience-card:hover {
+    border-color: rgba(108,99,255,0.15);
+    transform: translateY(-4px);
+  }
+  .audience-emoji {
+    font-size: 2.5rem;
+    margin-bottom: 16px;
+    display: block;
+  }
+  .audience-card h3 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+  }
+  .audience-card p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  /* ========== TECH STACK BADGES ========== */
+  .tech-stack {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 40px 100px;
+    text-align: center;
+  }
+  .tech-stack .section-label {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+  .tech-badges {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .tech-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 100px;
+    padding: 10px 20px;
+    font-family: var(--font-display);
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.3s;
+  }
+  .tech-badge:hover {
+    border-color: rgba(108,99,255,0.2);
+    color: var(--text-primary);
+  }
+  .tech-badge .tech-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .tech-badge:nth-child(1) .tech-dot { background: #61DAFB; }
+  .tech-badge:nth-child(2) .tech-dot { background: #3ECF8E; }
+  .tech-badge:nth-child(3) .tech-dot { background: #D4A574; }
+  .tech-badge:nth-child(4) .tech-dot { background: #FF6B6B; }
+  .tech-badge:nth-child(5) .tech-dot { background: #FFD93D; }
+  .tech-badge:nth-child(6) .tech-dot { background: #6C63FF; }
+
+  /* ========== CTA ========== */
+  .cta {
+    position: relative;
+    padding: 120px 40px;
+    text-align: center;
+    overflow: hidden;
+  }
+  .cta::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #1a1040 0%, #0B0F1A 50%, #0f1a2e 100%);
+    z-index: 0;
+  }
+  .cta::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, var(--accent-glow), transparent 70%);
+    z-index: 0;
+  }
+  .cta-content {
+    position: relative;
+    z-index: 1;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .cta h2 {
+    font-family: var(--font-display);
+    font-size: 2.8rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin-bottom: 20px;
+  }
+  .cta p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: 40px;
+    line-height: 1.7;
+  }
+  .cta-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  /* ========== FOOTER NAV ========== */
+  .app-nav {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+  .app-nav a {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .app-nav a:hover { color: var(--accent-bright); }
+
+  /* ========== AUTO-GENERATED BADGE ========== */
+  .auto-badge {
+    text-align: center;
+    padding: 24px;
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+  .auto-badge span { color: var(--accent); }
+
+  /* ========== ANIMATIONS ========== */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ========== RESPONSIVE ========== */
+  @media (max-width: 900px) {
+    .hero {
+      grid-template-columns: 1fr;
+      padding: 40px 24px 60px;
+      min-height: auto;
+    }
+    .hero h1 { font-size: 2.6rem; }
+    .hero-visual { order: -1; }
+    .screenshot-frame { transform: none; }
+    .problem-solution { grid-template-columns: 1fr; padding: 60px 24px; }
+    .features { padding: 60px 24px; }
+    .features-grid { grid-template-columns: 1fr; }
+    .gallery { padding: 60px 24px; }
+    .gallery-scroll { grid-template-columns: 1fr; }
+    .audience { padding: 60px 24px; }
+    .audience-grid { grid-template-columns: 1fr; }
+    .section-header h2 { font-size: 2rem; }
+    .cta h2 { font-size: 2rem; }
+    .site-header nav { display: none; }
+    .breadcrumb { padding: 0 24px; }
+    .hero-actions { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Site Header -->
+<header class="site-header">
+  <a href="#" class="logo">Ziv<span>Raviv</span>.com</a>
+  <nav>
+    <a href="#">Home</a>
+    <a href="#" class="active">Apps</a>
+    <a href="#">Podcast</a>
+    <a href="#">Services</a>
+    <a href="#">Contact</a>
+  </nav>
+</header>
+
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+  <a href="#">Home</a><span class="sep">/</span>
+  <a href="#">Apps</a><span class="sep">/</span>
+  ChoirMind
+</div>
+
+<!-- Hero Section -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      Live &middot; Built with AI
+    </div>
+    <h1>
+      <span class="gradient-text">ChoirMind</span><br>
+      Memorize Songs,<br>Not Stress.
+    </h1>
+    <p class="tagline">
+      The AI-powered memorization app built for Israeli community choirs. Learn your parts, 
+      get vocal coaching, and arrive at every rehearsal prepared and confident.
+    </p>
+    <div class="hero-actions">
+      <a href="#" class="btn-primary">Try ChoirMind</a>
+      <a href="#" class="btn-secondary">Watch Demo</a>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="screenshot-frame">
+      <div class="screenshot-bar">
+        <span class="dot-r"></span>
+        <span class="dot-y"></span>
+        <span class="dot-g"></span>
+        <div class="url-bar">choirmind.app</div>
+      </div>
+      <div class="screenshot-content">
+        <div class="mock-app-title">&#127925; ChoirMind</div>
+        <div class="mock-app-subtitle">Choose your choir &middot; Pick a song &middot; Start practicing</div>
+        <div class="mock-cards">
+          <div class="mock-card">
+            <div class="icon">&#127911;</div>
+            <div class="label">Practice</div>
+          </div>
+          <div class="mock-card">
+            <div class="icon">&#127908;</div>
+            <div class="label">Record</div>
+          </div>
+          <div class="mock-card">
+            <div class="icon">&#128200;</div>
+            <div class="label">Progress</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Problem / Solution -->
+<section class="problem-solution">
+  <div class="ps-card problem reveal">
+    <div class="label">The Problem</div>
+    <h3>Choir members forget their parts between rehearsals</h3>
+    <p>
+      Community choir singers meet once a week and spend precious rehearsal time re-learning 
+      songs they already practiced. Directors repeat the same sections over and over. Members 
+      feel embarrassed when they cannot remember their vocal part, and some stop showing up 
+      entirely. There is no good tool for practicing Hebrew choral music at home.
+    </p>
+  </div>
+  <div class="ps-card solution reveal">
+    <div class="label">The Solution</div>
+    <h3>An AI vocal coach that lives in your pocket</h3>
+    <p>
+      ChoirMind gives every choir member a personal practice companion. It knows your 
+      choir's repertoire, isolates your vocal part, and provides AI-powered feedback on pitch 
+      and timing. Built Hebrew-first for the Israeli community choir ecosystem, it transforms 
+      the time between rehearsals into productive practice sessions.
+    </p>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="features">
+  <div class="section-header reveal">
+    <div class="overline">What It Does</div>
+    <h2>Four pillars of better<br>choir practice</h2>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card reveal">
+      <div class="feature-icon">&#127911;</div>
+      <h3>Smart Part Isolation</h3>
+      <p>
+        Select your vocal part (soprano, alto, tenor, bass) and hear it isolated from the full 
+        arrangement. Practice your line with or without the other parts playing softly in the 
+        background for context.
+      </p>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon">&#129302;</div>
+      <h3>AI Vocal Coaching</h3>
+      <p>
+        Record yourself singing and get instant feedback on pitch accuracy, timing, and breath 
+        support. The AI coach identifies specific measures where you need more practice and 
+        suggests targeted exercises.
+      </p>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon">&#128218;</div>
+      <h3>Hebrew-First Song Library</h3>
+      <p>
+        A growing library of Hebrew choral arrangements with full RTL support, transliterations 
+        for new learners, and synchronized lyrics that highlight each word as the music plays. 
+        Directors can upload custom arrangements.
+      </p>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon">&#128200;</div>
+      <h3>Progress Dashboard</h3>
+      <p>
+        Track your practice streaks, see which songs you have mastered, and identify where you 
+        need more work. Directors get a birds-eye view of their entire choir's readiness before 
+        each rehearsal.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Screenshot Gallery -->
+<section class="gallery">
+  <div class="gallery-inner">
+    <div class="section-header reveal">
+      <div class="overline">See It In Action</div>
+      <h2>Screenshots from the app</h2>
+    </div>
+    <div class="gallery-scroll">
+      <div class="gallery-item reveal">
+        <div class="gallery-mock screen-1">
+          <div class="mock-ui-element accent"></div>
+          <div class="mock-ui-element short"></div>
+          <div class="mock-ui-grid">
+            <div class="mock-ui-box"></div>
+            <div class="mock-ui-box"></div>
+            <div class="mock-ui-box"></div>
+            <div class="mock-ui-box"></div>
+          </div>
+        </div>
+        <div class="screen-label"><span class="num">1</span> Song Selection</div>
+      </div>
+      <div class="gallery-item reveal">
+        <div class="gallery-mock screen-2">
+          <div class="mock-ui-element"></div>
+          <div class="mock-ui-element warm"></div>
+          <div class="mock-ui-element short"></div>
+          <div style="width:80%;height:60px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);margin-top:12px;display:flex;align-items:center;justify-content:center;">
+            <div style="width:60%;height:4px;border-radius:2px;background:linear-gradient(90deg,var(--coral),var(--gold));"></div>
+          </div>
+        </div>
+        <div class="screen-label"><span class="num">2</span> Practice Mode</div>
+      </div>
+      <div class="gallery-item reveal">
+        <div class="gallery-mock screen-3">
+          <div class="mock-ui-element teal"></div>
+          <div class="mock-ui-element short"></div>
+          <div style="width:80%;display:flex;gap:8px;margin-top:12px;">
+            <div style="flex:1;height:40px;border-radius:8px;background:rgba(78,205,196,0.1);border:1px solid rgba(78,205,196,0.15);"></div>
+            <div style="flex:1;height:40px;border-radius:8px;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.15);"></div>
+          </div>
+          <div style="width:80%;display:flex;gap:8px;margin-top:8px;">
+            <div style="flex:1;height:40px;border-radius:8px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.12);"></div>
+            <div style="flex:1;height:40px;border-radius:8px;background:rgba(255,217,61,0.08);border:1px solid rgba(255,217,61,0.12);"></div>
+          </div>
+        </div>
+        <div class="screen-label"><span class="num">3</span> AI Feedback Report</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Who It's For -->
+<section class="audience">
+  <div class="section-header reveal">
+    <div class="overline">Who Is This For</div>
+    <h2>Built for the people who<br>make choirs happen</h2>
+  </div>
+  <div class="audience-grid">
+    <div class="audience-card reveal">
+      <span class="audience-emoji">&#127908;</span>
+      <h3>Choir Directors</h3>
+      <p>
+        Spend rehearsal time making music, not re-teaching parts. See which members have 
+        practiced and which songs need more group work.
+      </p>
+    </div>
+    <div class="audience-card reveal">
+      <span class="audience-emoji">&#127926;</span>
+      <h3>Choir Members</h3>
+      <p>
+        Practice at your own pace between rehearsals. Build confidence with AI feedback 
+        so you always feel prepared when the group meets.
+      </p>
+    </div>
+    <div class="audience-card reveal">
+      <span class="audience-emoji">&#127899;</span>
+      <h3>Community Organizations</h3>
+      <p>
+        Give your choir program a modern edge. Attract new members with a tech-forward 
+        approach that makes participation accessible and fun.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Tech Stack -->
+<section class="tech-stack reveal">
+  <div class="section-label">Built With</div>
+  <div class="tech-badges">
+    <div class="tech-badge"><span class="tech-dot"></span>React</div>
+    <div class="tech-badge"><span class="tech-dot"></span>Supabase</div>
+    <div class="tech-badge"><span class="tech-dot"></span>Claude API</div>
+    <div class="tech-badge"><span class="tech-dot"></span>Web Audio API</div>
+    <div class="tech-badge"><span class="tech-dot"></span>Hebrew NLP</div>
+    <div class="tech-badge"><span class="tech-dot"></span>Vibe Coded</div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <div class="cta-content reveal">
+    <h2>Ready to transform<br>your choir practice?</h2>
+    <p>
+      ChoirMind is live and ready for your choir. Start a free trial or 
+      get in touch to learn how it can work for your community.
+    </p>
+    <div class="cta-buttons">
+      <a href="#" class="btn-primary">Start Free Trial</a>
+      <a href="#" class="btn-secondary">Talk to Ziv</a>
+    </div>
+  </div>
+</section>
+
+<!-- Bottom Navigation -->
+<div class="app-nav">
+  <a href="#">&larr; KM Boards</a>
+  <a href="#">All Apps</a>
+  <a href="#">Karaoke Madness &rarr;</a>
+</div>
+
+<!-- Auto-generated badge -->
+<div class="auto-badge">
+  This page was auto-generated by <span>AppSpotlight</span> &middot; Last updated Feb 25, 2026
+</div>
+
+<!-- Scroll reveal script -->
+<script>
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>

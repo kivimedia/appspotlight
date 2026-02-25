@@ -1,0 +1,22 @@
+{
+  "name": "@appspotlight/watcher",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@appspotlight/shared": "*",
+    "@appspotlight/analyst": "*",
+    "@appspotlight/publisher": "*",
+    "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "typescript": "^5.5.0"
+  }
+}
