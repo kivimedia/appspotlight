@@ -7,9 +7,13 @@ import {
   completeRunRecord,
   failRunRecord,
   checkBudget,
+  updateRunRecord,
+  getDraftRuns,
+  getRunById,
 } from '@appspotlight/shared';
-import { analyzeRepo } from '@appspotlight/analyst';
-import { publishApp } from '@appspotlight/publisher';
+import type { ReviewAction } from '@appspotlight/shared';
+import { analyzeRepo, regenerateContent } from '@appspotlight/analyst';
+import { publishApp, publishDraftPage } from '@appspotlight/publisher';
 import { validateSignature, parseWebhookEvent, checkCooldown } from './webhook-handler.js';
 
 const log = createLogger('watcher');
@@ -88,12 +92,47 @@ async function processPipeline(
 
   try {
     // Run Analyst
-    const analystOutput = await analyzeRepo({
+    let analystOutput = await analyzeRepo({
       repoUrl: event.cloneUrl,
     });
 
     // Run Publisher
-    const publishResult = await publishApp(analystOutput);
+    let publishResult = await publishApp(analystOutput);
+
+    // Auto-retry if QA failed and confidence is salvageable
+    if (!publishResult.qaResult.passed && analystOutput.confidence >= 40) {
+      log.info(`QA failed — retrying with feedback (confidence=${analystOutput.confidence})...`);
+      log.info(`Failures: ${publishResult.qaResult.failures.join('; ')}`);
+
+      try {
+        const retryOutput = await regenerateContent(
+          event.cloneUrl,
+          analystOutput,
+          publishResult.qaResult.failures
+        );
+
+        const retryPublishResult = await publishApp(retryOutput);
+
+        // Use retry if it's better (fewer failures or QA passes)
+        if (retryPublishResult.qaResult.passed ||
+            retryPublishResult.qaResult.failures.length < publishResult.qaResult.failures.length) {
+          log.info(`Retry improved results (${retryPublishResult.qaResult.failures.length} failures vs ${publishResult.qaResult.failures.length})`);
+          analystOutput = retryOutput;
+          publishResult = retryPublishResult;
+        } else {
+          log.info('Retry did not improve — keeping original');
+        }
+
+        // Track retry cost and failures
+        await updateRunRecord(runId, {
+          retry_count: 1,
+          retry_cost_usd: retryOutput.costData.total_cost_usd,
+          retry_qa_failures: publishResult.qaResult.failures,
+        });
+      } catch (retryErr) {
+        log.error(`Retry failed: ${(retryErr as Error).message} — keeping original`);
+      }
+    }
 
     // Log completion
     await completeRunRecord(
@@ -105,7 +144,8 @@ async function processPipeline(
         status: publishResult.pageResult.status,
       },
       analystOutput.confidence,
-      publishResult.qaResult
+      publishResult.qaResult,
+      analystOutput.content
     );
 
     log.info(`✓ Pipeline complete: ${event.repoName} → ${publishResult.pageResult.pageUrl}`);
@@ -114,6 +154,66 @@ async function processPipeline(
     await failRunRecord(runId, (err as Error).message);
   }
 }
+
+// ─── Review Endpoints ───────────────────────────────────────────────────────
+
+// GET /drafts — list pending drafts
+app.get('/drafts', async (_req, res) => {
+  try {
+    const drafts = await getDraftRuns();
+    res.json(drafts);
+  } catch (err) {
+    log.error(`GET /drafts error: ${(err as Error).message}`);
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// POST /review/:runId — approve, edit+approve, or reject a draft
+app.post('/review/:runId', async (req, res) => {
+  const { runId } = req.params;
+  const body = req.body as ReviewAction;
+
+  if (!body.action || !['approve', 'edit_approve', 'reject'].includes(body.action)) {
+    res.status(400).json({ error: 'Invalid action. Must be: approve, edit_approve, or reject' });
+    return;
+  }
+
+  try {
+    const run = await getRunById(runId);
+    if (!run) {
+      res.status(404).json({ error: 'Run not found' });
+      return;
+    }
+
+    if (!run.wp_page_id) {
+      res.status(400).json({ error: 'Run has no WordPress page' });
+      return;
+    }
+
+    if (body.action === 'approve') {
+      await publishDraftPage(run.wp_page_id);
+      await updateRunRecord(runId, { publish_action: 'draft_approved' });
+      log.info(`Approved and published run ${runId} (page ${run.wp_page_id})`);
+      res.json({ status: 'published', pageId: run.wp_page_id });
+    } else if (body.action === 'reject') {
+      await updateRunRecord(runId, {
+        publish_action: 'rejected',
+        error_message: body.rejection_reason ?? 'Rejected by reviewer',
+      });
+      log.info(`Rejected run ${runId}`);
+      res.json({ status: 'rejected', runId });
+    } else if (body.action === 'edit_approve') {
+      // For now, just approve — full edit+re-render support is Phase 4
+      await publishDraftPage(run.wp_page_id);
+      await updateRunRecord(runId, { publish_action: 'draft_approved' });
+      log.info(`Edit-approved run ${runId} (page ${run.wp_page_id})`);
+      res.json({ status: 'published', pageId: run.wp_page_id });
+    }
+  } catch (err) {
+    log.error(`POST /review/${runId} error: ${(err as Error).message}`);
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
 
 // Start server
 const config = getConfig();

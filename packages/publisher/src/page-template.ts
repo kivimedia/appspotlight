@@ -49,7 +49,16 @@ export function generatePageMarkup(
   // Auto-generated badge footer
   blocks.push(buildFooterBadge(repoName, confidence));
 
-  return blocks.join('\n\n');
+  const innerContent = blocks.join('\n\n');
+
+  // Wrap everything in a dark background group to prevent white gaps
+  return `<!-- wp:group {"backgroundColor":"black","style":{"spacing":{"padding":{"top":"0","bottom":"0","left":"0","right":"0"},"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
+<div class="wp-block-group has-black-background-color has-background" style="margin-top:0;margin-bottom:0;padding-top:0;padding-right:0;padding-bottom:0;padding-left:0">
+
+${innerContent}
+
+</div>
+<!-- /wp:group -->`;
 }
 
 // ─── Section Builders ───────────────────────────────────────────────────────
@@ -87,8 +96,8 @@ function buildProblemSolutionSection(content: AppContent): string {
     ? sentences.slice(midpoint).join('. ') + '.'
     : `${content.app_name} solves this. ${content.tagline}`;
 
-  return `<!-- wp:columns {"className":"appspotlight-problem-solution"} -->
-<div class="wp-block-columns appspotlight-problem-solution">
+  return `<!-- wp:columns {"className":"appspotlight-problem-solution","style":{"spacing":{"padding":{"top":"3rem","bottom":"3rem","left":"2rem","right":"2rem"}}}} -->
+<div class="wp-block-columns appspotlight-problem-solution" style="padding-top:3rem;padding-right:2rem;padding-bottom:3rem;padding-left:2rem">
 
 <!-- wp:column {"backgroundColor":"black","style":{"border":{"radius":"16px"},"spacing":{"padding":{"top":"2.5rem","right":"2.5rem","bottom":"2.5rem","left":"2.5rem"}}}} -->
 <div class="wp-block-column has-black-background-color has-background" style="border-radius:16px;padding-top:2.5rem;padding-right:2.5rem;padding-bottom:2.5rem;padding-left:2.5rem">
@@ -155,8 +164,8 @@ ${cols}
 <!-- /wp:columns -->`);
   }
 
-  return `<!-- wp:group {"className":"appspotlight-features","style":{"spacing":{"padding":{"top":"4rem","bottom":"4rem"}}}} -->
-<div class="wp-block-group appspotlight-features" style="padding-top:4rem;padding-bottom:4rem">
+  return `<!-- wp:group {"className":"appspotlight-features","backgroundColor":"black","style":{"spacing":{"padding":{"top":"4rem","bottom":"4rem","left":"2rem","right":"2rem"}}}} -->
+<div class="wp-block-group appspotlight-features has-black-background-color has-background" style="padding-top:4rem;padding-right:2rem;padding-bottom:4rem;padding-left:2rem">
 
 <!-- wp:heading {"textAlign":"center","style":{"typography":{"fontSize":"2.2rem","fontWeight":"800"}},"textColor":"white"} -->
 <h2 class="wp-block-heading has-text-align-center has-white-color has-text-color" style="font-size:2.2rem;font-weight:800">What It Does</h2>
@@ -179,8 +188,8 @@ function buildGallerySection(mediaResults: WPMediaResult[]): string {
 <!-- /wp:image -->`
   ).join('\n\n');
 
-  return `<!-- wp:group {"className":"appspotlight-gallery","style":{"spacing":{"padding":{"top":"4rem","bottom":"4rem"}}}} -->
-<div class="wp-block-group appspotlight-gallery" style="padding-top:4rem;padding-bottom:4rem">
+  return `<!-- wp:group {"className":"appspotlight-gallery","backgroundColor":"black","style":{"spacing":{"padding":{"top":"4rem","bottom":"4rem","left":"2rem","right":"2rem"}}}} -->
+<div class="wp-block-group appspotlight-gallery has-black-background-color has-background" style="padding-top:4rem;padding-right:2rem;padding-bottom:4rem;padding-left:2rem">
 
 <!-- wp:heading {"textAlign":"center","style":{"typography":{"fontSize":"2.2rem","fontWeight":"800"}},"textColor":"white"} -->
 <h2 class="wp-block-heading has-text-align-center has-white-color has-text-color" style="font-size:2.2rem;font-weight:800">See It In Action</h2>
@@ -220,8 +229,8 @@ function buildAudienceSection(content: AppContent): string {
 <!-- /wp:column -->`
   ).join('\n\n');
 
-  return `<!-- wp:group {"className":"appspotlight-audience","style":{"spacing":{"padding":{"top":"4rem","bottom":"4rem"}}}} -->
-<div class="wp-block-group appspotlight-audience" style="padding-top:4rem;padding-bottom:4rem">
+  return `<!-- wp:group {"className":"appspotlight-audience","backgroundColor":"black","style":{"spacing":{"padding":{"top":"4rem","bottom":"4rem","left":"2rem","right":"2rem"}}}} -->
+<div class="wp-block-group appspotlight-audience has-black-background-color has-background" style="padding-top:4rem;padding-right:2rem;padding-bottom:4rem;padding-left:2rem">
 
 <!-- wp:heading {"textAlign":"center","style":{"typography":{"fontSize":"2.2rem","fontWeight":"800"}},"textColor":"white"} -->
 <h2 class="wp-block-heading has-text-align-center has-white-color has-text-color" style="font-size:2.2rem;font-weight:800">Who It's For</h2>
@@ -243,11 +252,11 @@ ${cards}
 
 function buildTechStackSection(content: AppContent): string {
   const badges = content.tech_stack.map(tech =>
-    `<span style="display:inline-block;background:#131829;border:1px solid rgba(255,255,255,0.06);border-radius:100px;padding:8px 18px;margin:4px;font-size:0.85rem;color:#9CA3BE;font-family:sans-serif">${esc(tech)}</span>`
+    `<span style="display:inline-block;background:#1e2440;border:1px solid rgba(255,255,255,0.15);border-radius:100px;padding:8px 18px;margin:4px;font-size:0.85rem;color:#d1d5e8;font-family:sans-serif">${esc(tech)}</span>`
   ).join('');
 
-  return `<!-- wp:group {"className":"appspotlight-tech-stack","style":{"spacing":{"padding":{"top":"2rem","bottom":"4rem"}}}} -->
-<div class="wp-block-group appspotlight-tech-stack" style="padding-top:2rem;padding-bottom:4rem">
+  return `<!-- wp:group {"className":"appspotlight-tech-stack","backgroundColor":"black","style":{"spacing":{"padding":{"top":"2rem","bottom":"4rem","left":"2rem","right":"2rem"}}}} -->
+<div class="wp-block-group appspotlight-tech-stack has-black-background-color has-background" style="padding-top:2rem;padding-right:2rem;padding-bottom:4rem;padding-left:2rem">
 
 <!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"0.8rem","fontWeight":"600","textTransform":"uppercase","letterSpacing":"0.15em"}},"textColor":"cyan-bluish-gray"} -->
 <p class="has-text-align-center" style="font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.15em">Built With</p>
@@ -293,8 +302,8 @@ function buildFooterBadge(repoName: string, confidence: number): string {
   const date = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const badge = confidence >= 90 ? '' : ' · ⚠️ Review Suggested';
 
-  return `<!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"0.75rem"}},"textColor":"cyan-bluish-gray","className":"appspotlight-badge"} -->
-<p class="has-text-align-center has-cyan-bluish-gray-color has-text-color appspotlight-badge" style="font-size:0.75rem">This page was auto-generated by <strong>AppSpotlight</strong> · Last updated ${date}${badge}</p>
+  return `<!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"0.75rem"},"spacing":{"padding":{"top":"1rem","bottom":"1rem"}}},"textColor":"cyan-bluish-gray","className":"appspotlight-badge"} -->
+<p class="has-text-align-center has-cyan-bluish-gray-color has-text-color appspotlight-badge" style="font-size:0.75rem;padding-top:1rem;padding-bottom:1rem">This page was auto-generated by <strong>AppSpotlight</strong> · Last updated ${date}${badge}</p>
 <!-- /wp:paragraph -->`;
 }
 

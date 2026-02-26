@@ -79,6 +79,6 @@ export async function publishApp(analystOutput: AnalystOutput): Promise<PublishR
 }
 
 // Re-export sub-modules
-export { findPageBySlug, createPage, updatePage, uploadAllScreenshots } from './wordpress-client.js';
+export { findPageBySlug, createPage, updatePage, uploadAllScreenshots, publishDraftPage, fetchChildPages } from './wordpress-client.js';
 export { generatePageMarkup } from './page-template.js';
 export { runQAChecks } from './qa-checks.js';

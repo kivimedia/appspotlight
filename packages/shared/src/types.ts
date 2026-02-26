@@ -91,6 +91,12 @@ export interface RunRecord {
   screenshot_cost_usd: number;
   total_cost_usd: number;
 
+  // Feedback loop fields
+  generated_content: AppContent | null;
+  retry_count: number;
+  retry_cost_usd: number;
+  retry_qa_failures: string[];
+
   started_at: string;
   completed_at: string | null;
   error_message: string | null;
@@ -100,6 +106,19 @@ export interface HumanEdit {
   field: string;
   original_value: string;
   edited_value: string;
+}
+
+// ─── Feedback Loop ──────────────────────────────────────────────────────────
+
+export interface FeedbackContext {
+  previousContent: AppContent;
+  qaFailures: string[];
+}
+
+export interface ReviewAction {
+  action: 'approve' | 'edit_approve' | 'reject';
+  edits?: Partial<AppContent>;
+  rejection_reason?: string;
 }
 
 // ─── Webhook Events ─────────────────────────────────────────────────────────

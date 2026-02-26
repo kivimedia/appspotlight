@@ -22,8 +22,9 @@ import {
   completeRunRecord,
   failRunRecord,
   checkBudget,
+  updateRunRecord,
 } from '@appspotlight/shared';
-import { analyzeRepo } from '@appspotlight/analyst';
+import { analyzeRepo, regenerateContent } from '@appspotlight/analyst';
 import { publishApp } from '@appspotlight/publisher';
 
 const log = createLogger('manual');
@@ -114,7 +115,7 @@ async function main(): Promise<void> {
     log.info('Phase 1: ANALYST');
     log.info('─────────────────────────────────────────');
 
-    const analystOutput = await analyzeRepo({
+    let analystOutput = await analyzeRepo({
       repoUrl,
       deployedUrl: deployedUrl ?? null,
     });
@@ -145,7 +146,8 @@ async function main(): Promise<void> {
         analystOutput.costData,
         null,
         analystOutput.confidence,
-        { passed: true, failures: [] }
+        { passed: true, failures: [] },
+        analystOutput.content
       );
 
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -158,7 +160,42 @@ async function main(): Promise<void> {
     log.info('Phase 2: PUBLISHER');
     log.info('─────────────────────────────────────────');
 
-    const publishResult = await publishApp(analystOutput);
+    let publishResult = await publishApp(analystOutput);
+
+    // Auto-retry if QA failed and confidence is salvageable
+    if (!publishResult.qaResult.passed && analystOutput.confidence >= 40) {
+      log.info('');
+      log.info('Phase 2b: AUTO-RETRY (QA failed)');
+      log.info('─────────────────────────────────────────');
+      log.info(`Failures: ${publishResult.qaResult.failures.join('; ')}`);
+
+      try {
+        const retryOutput = await regenerateContent(
+          repoUrl,
+          analystOutput,
+          publishResult.qaResult.failures
+        );
+
+        const retryPublishResult = await publishApp(retryOutput);
+
+        if (retryPublishResult.qaResult.passed ||
+            retryPublishResult.qaResult.failures.length < publishResult.qaResult.failures.length) {
+          log.info(`Retry improved results (${retryPublishResult.qaResult.failures.length} failures vs ${publishResult.qaResult.failures.length})`);
+          analystOutput = retryOutput;
+          publishResult = retryPublishResult;
+        } else {
+          log.info('Retry did not improve — keeping original');
+        }
+
+        await updateRunRecord(runId, {
+          retry_count: 1,
+          retry_cost_usd: retryOutput.costData.total_cost_usd,
+          retry_qa_failures: publishResult.qaResult.failures,
+        });
+      } catch (retryErr) {
+        log.error(`Retry failed: ${(retryErr as Error).message} — keeping original`);
+      }
+    }
 
     // Log to Supabase
     await completeRunRecord(
@@ -170,7 +207,8 @@ async function main(): Promise<void> {
         status: publishResult.pageResult.status,
       },
       analystOutput.confidence,
-      publishResult.qaResult
+      publishResult.qaResult,
+      analystOutput.content
     );
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);

@@ -9,6 +9,8 @@ export type {
   CostData,
   RunRecord,
   HumanEdit,
+  FeedbackContext,
+  ReviewAction,
   GitHubEvent,
   WPPageResult,
   WPMediaResult,
@@ -38,4 +40,8 @@ export {
   getWeeklySpend,
   getMonthlySpend,
   queryRuns,
+  getRunById,
+  getDraftRuns,
+  getRunsWithEdits,
+  getRunByWpPageId,
 } from './supabase.js';

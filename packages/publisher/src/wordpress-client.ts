@@ -107,6 +107,40 @@ export async function updatePage(
   };
 }
 
+export async function publishDraftPage(pageId: number): Promise<WPPageResult> {
+  const result = await wpFetch<{ id: number; link: string; status: string }>(
+    `/pages/${pageId}`,
+    { method: 'PUT', body: { status: 'publish' } }
+  );
+
+  log.info(`Published draft page: ${result.link}`);
+
+  return {
+    pageId: result.id,
+    pageUrl: result.link,
+    status: 'publish',
+    action: 'updated',
+  };
+}
+
+export async function fetchChildPages(parentSlug: string): Promise<Array<{ id: number; link: string; title: string; content: string; status: string }>> {
+  // First find the parent page ID
+  const parent = await findPageBySlug(parentSlug);
+  if (!parent) return [];
+
+  const pages = await wpFetch<Array<{ id: number; link: string; title: { rendered: string }; content: { rendered: string }; status: string }>>(
+    `/pages?parent=${parent.id}&per_page=100&status=any`
+  );
+
+  return pages.map(p => ({
+    id: p.id,
+    link: p.link,
+    title: p.title.rendered,
+    content: p.content.rendered,
+    status: p.status,
+  }));
+}
+
 // ─── Media ──────────────────────────────────────────────────────────────────
 
 export async function uploadMedia(

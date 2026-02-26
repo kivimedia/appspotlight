@@ -97,6 +97,68 @@ export async function analyzeRepo(options: AnalyzeOptions): Promise<AnalystOutpu
   }
 }
 
+/**
+ * Regenerate content with QA feedback — used for auto-retry.
+ * Re-clones repo, calls Claude with feedback context, keeps original screenshots.
+ */
+export async function regenerateContent(
+  repoUrl: string,
+  previousOutput: AnalystOutput,
+  qaFailures: string[]
+): Promise<AnalystOutput> {
+  log.info(`═══ Retrying content for: ${previousOutput.repoMeta.repoName} ═══`);
+  log.info(`QA failures to fix: ${qaFailures.join('; ')}`);
+
+  const repoFiles = await cloneAndReadRepo(repoUrl);
+
+  try {
+    const contentResult = await generateContent(repoFiles, {
+      previousContent: previousOutput.content,
+      qaFailures,
+    });
+
+    const features = contentResult.content.features ?? [];
+    const audience = contentResult.content.target_audience ?? '';
+    contentResult.content.features = features;
+    contentResult.content.target_audience = audience;
+
+    const confidence = calculateConfidence(
+      repoFiles,
+      features.length,
+      audience.length > 10,
+      previousOutput.screenshots,
+      previousOutput.confidenceBreakdown.deployedUrlReachable
+    );
+
+    const costData = calculateCost(
+      contentResult.inputTokens,
+      contentResult.outputTokens,
+      contentResult.modelUsed,
+      0 // no new screenshots
+    );
+
+    if (contentResult.content.cta_url === '/contact' && previousOutput.repoMeta.homepageUrl) {
+      contentResult.content.cta_url = previousOutput.repoMeta.homepageUrl;
+    }
+
+    log.info(`✓ Retry complete for "${contentResult.content.app_name}"`);
+    log.info(`  Confidence: ${confidence.totalScore}/100 (was ${previousOutput.confidence})`);
+    log.info(`  Features: ${features.length}`);
+    log.info(`  Retry cost: $${costData.total_cost_usd.toFixed(4)}`);
+
+    return {
+      content: contentResult.content,
+      screenshots: previousOutput.screenshots,
+      confidence: confidence.totalScore,
+      confidenceBreakdown: confidence,
+      costData,
+      repoMeta: previousOutput.repoMeta,
+    };
+  } finally {
+    cleanupRepo(repoFiles.clonePath);
+  }
+}
+
 // Re-export sub-modules for direct access
 export { cloneAndReadRepo, cleanupRepo } from './repo-reader.js';
 export { generateContent } from './content-generator.js';

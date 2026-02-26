@@ -16,6 +16,8 @@
     "manual": "npx tsx scripts/run-manual.ts",
     "backfill": "npx tsx scripts/backfill.ts",
     "cost-report": "npx tsx scripts/cost-report.ts",
+    "capture-edits": "npx tsx scripts/capture-wp-edits.ts",
+    "prompt-refinement": "npx tsx scripts/prompt-refinement.ts",
     "start:watcher": "npm run start -w packages/watcher"
   },
   "devDependencies": {

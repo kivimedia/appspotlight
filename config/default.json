@@ -46,5 +46,9 @@
   "watcher": {
     "port": 3100
   },
-  "deployUrlMap": {}
+  "deployUrlMap": {
+    "boards": "https://boards-one.vercel.app",
+    "choirmind": "https://choirmind.vercel.app",
+    "KaraokeMadness": "https://karaoke-madness.vercel.app"
+  }
 }

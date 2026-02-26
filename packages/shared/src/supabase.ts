@@ -2,7 +2,7 @@ import pg from 'pg';
 const { Pool } = pg;
 import { getConfig } from './config.js';
 import { createLogger } from './logger.js';
-import type { RunRecord, CostData } from './types.js';
+import type { RunRecord, CostData, AppContent, HumanEdit } from './types.js';
 
 const log = createLogger('database');
 
@@ -43,10 +43,11 @@ export async function createRunRecord(
     await pool.query(
       `INSERT INTO pipeline_runs (
         run_id, repo_name, event_type, status, started_at,
-        auto_check_failures, human_edits,
+        auto_check_failures, human_edits, retry_qa_failures,
         claude_input_tokens, claude_output_tokens, claude_model_used,
-        claude_cost_usd, screenshot_duration_sec, screenshot_cost_usd, total_cost_usd
-      ) VALUES ($1, $2, $3, 'running', NOW(), '{}', '[]', 0, 0, '', 0, 0, 0, 0)`,
+        claude_cost_usd, screenshot_duration_sec, screenshot_cost_usd, total_cost_usd,
+        retry_count, retry_cost_usd
+      ) VALUES ($1, $2, $3, 'running', NOW(), '{}', '[]', '{}', 0, 0, '', 0, 0, 0, 0, 0, 0)`,
       [runId, repoName, eventType]
     );
   } catch (err) {
@@ -70,13 +71,16 @@ export async function updateRunRecord(
   let paramIdx = 1;
 
   for (const [key, value] of entries) {
-    if (key === 'auto_check_failures') {
+    if (key === 'auto_check_failures' || key === 'retry_qa_failures') {
       setClauses.push(`${key} = $${paramIdx}::text[]`);
-    } else if (key === 'human_edits') {
+    } else if (key === 'human_edits' || key === 'generated_content') {
       setClauses.push(`${key} = $${paramIdx}::jsonb`);
       values.push(JSON.stringify(value));
       paramIdx++;
       continue;
+    } else if (key === 'screenshot_duration_sec') {
+      // Cast float to numeric to avoid integer type mismatch
+      setClauses.push(`${key} = $${paramIdx}::numeric`);
     } else {
       setClauses.push(`${key} = $${paramIdx}`);
     }
@@ -101,13 +105,14 @@ export async function completeRunRecord(
   costData: CostData,
   pageResult: { pageId: number; pageUrl: string; status: string } | null,
   confidence: number,
-  qaResult: { passed: boolean; failures: string[] }
+  qaResult: { passed: boolean; failures: string[] },
+  generatedContent?: AppContent | null
 ): Promise<void> {
   const publishAction = pageResult
     ? (pageResult.status === 'publish' ? 'auto_published' : 'draft_approved')
     : null;
 
-  await updateRunRecord(runId, {
+  const updates: Partial<RunRecord> = {
     status: 'completed',
     completed_at: new Date().toISOString(),
     confidence_score: confidence,
@@ -117,7 +122,13 @@ export async function completeRunRecord(
     wp_page_id: pageResult?.pageId ?? null,
     wp_page_url: pageResult?.pageUrl ?? null,
     ...costData,
-  });
+  };
+
+  if (generatedContent) {
+    updates.generated_content = generatedContent;
+  }
+
+  await updateRunRecord(runId, updates);
 }
 
 export async function failRunRecord(runId: string, errorMessage: string): Promise<void> {
@@ -212,5 +223,112 @@ export async function queryRuns(since: Date): Promise<RunRecord[]> {
   } catch (err) {
     log.error('Failed to query runs', { error: (err as Error).message });
     return [];
+  }
+}
+
+// ─── Feedback Loop Queries ─────────────────────────────────────────────────
+
+export async function getRunById(runId: string): Promise<(RunRecord & { generated_content: AppContent | null }) | null> {
+  const pool = getDbPool();
+  if (!pool) return null;
+
+  try {
+    const result = await pool.query(
+      `SELECT * FROM pipeline_runs WHERE run_id = $1`,
+      [runId]
+    );
+    if (result.rows.length === 0) return null;
+    const row = result.rows[0];
+    return {
+      ...row,
+      generated_content: row.generated_content ?? null,
+      human_edits: row.human_edits ?? [],
+      auto_check_failures: row.auto_check_failures ?? [],
+      retry_qa_failures: row.retry_qa_failures ?? [],
+    };
+  } catch (err) {
+    log.error('Failed to get run by ID', { error: (err as Error).message });
+    return null;
+  }
+}
+
+export async function getDraftRuns(): Promise<RunRecord[]> {
+  const pool = getDbPool();
+  if (!pool) return [];
+
+  try {
+    const result = await pool.query(
+      `SELECT run_id, repo_name, confidence_score, auto_check_failures,
+              wp_page_id, wp_page_url, started_at, publish_action
+       FROM pipeline_runs
+       WHERE status = 'completed'
+         AND wp_page_id IS NOT NULL
+         AND (publish_action IS NULL OR publish_action NOT IN ('auto_published', 'draft_approved', 'rejected'))
+       ORDER BY started_at DESC`
+    );
+    return result.rows;
+  } catch (err) {
+    log.error('Failed to get draft runs', { error: (err as Error).message });
+    return [];
+  }
+}
+
+export async function getRunsWithEdits(since: Date): Promise<Array<{
+  run_id: string;
+  repo_name: string;
+  human_edits: HumanEdit[];
+  auto_check_failures: string[];
+  generated_content: AppContent | null;
+}>> {
+  const pool = getDbPool();
+  if (!pool) return [];
+
+  try {
+    const result = await pool.query(
+      `SELECT run_id, repo_name, human_edits, auto_check_failures, generated_content
+       FROM pipeline_runs
+       WHERE started_at >= $1
+         AND status = 'completed'
+         AND (human_edits != '[]'::jsonb OR array_length(auto_check_failures, 1) > 0)
+       ORDER BY started_at DESC`,
+      [since.toISOString()]
+    );
+    return result.rows.map((row: Record<string, unknown>) => ({
+      run_id: row.run_id as string,
+      repo_name: row.repo_name as string,
+      human_edits: (row.human_edits as HumanEdit[]) ?? [],
+      auto_check_failures: (row.auto_check_failures as string[]) ?? [],
+      generated_content: (row.generated_content as AppContent) ?? null,
+    }));
+  } catch (err) {
+    log.error('Failed to get runs with edits', { error: (err as Error).message });
+    return [];
+  }
+}
+
+export async function getRunByWpPageId(wpPageId: number): Promise<(RunRecord & { generated_content: AppContent | null }) | null> {
+  const pool = getDbPool();
+  if (!pool) return null;
+
+  try {
+    const result = await pool.query(
+      `SELECT * FROM pipeline_runs
+       WHERE wp_page_id = $1
+       ORDER BY started_at DESC
+       LIMIT 1`,
+      [wpPageId]
+    );
+    if (result.rows.length === 0) return null;
+    const row = result.rows[0];
+    return {
+      ...row,
+      generated_content: row.generated_content ?? null,
+      human_edits: row.human_edits ?? [],
+      auto_check_failures: row.auto_check_failures ?? [],
+      retry_qa_failures: row.retry_qa_failures ?? [],
+    };
+  } catch (err) {
+    log.error('Failed to get run by WP page ID', { error: (err as Error).message });
+    return null;
   }
 }

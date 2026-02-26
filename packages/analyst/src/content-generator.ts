@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { createLogger, getConfig, selectModel } from '@appspotlight/shared';
-import type { AppContent, CostData } from '@appspotlight/shared';
+import type { AppContent, CostData, FeedbackContext } from '@appspotlight/shared';
 import { calculateCost } from '@appspotlight/shared';
 import type { RepoFiles } from './repo-reader.js';
 
@@ -69,7 +69,7 @@ export interface ContentResult {
   modelUsed: string;
 }
 
-export async function generateContent(repoFiles: RepoFiles): Promise<ContentResult> {
+export async function generateContent(repoFiles: RepoFiles, feedbackContext?: FeedbackContext): Promise<ContentResult> {
   const config = getConfig();
 
   const modelUsed = selectModel(
@@ -103,13 +103,30 @@ ${codeContext}
 
 Generate the JSON content now. If the app has a deployed URL, use it for cta_url. Otherwise use /contact as the CTA URL.`;
 
-  log.info(`Sending ${userMessage.length} chars to Claude...`);
+  // Build messages — optionally include feedback context for retry
+  const messages: Anthropic.MessageParam[] = [{ role: 'user', content: userMessage }];
+
+  if (feedbackContext) {
+    log.info('Including feedback context for retry...');
+    // Add the previous (bad) response as assistant context
+    messages.push({
+      role: 'assistant',
+      content: JSON.stringify(feedbackContext.previousContent),
+    });
+    // Add correction request with specific QA failures
+    messages.push({
+      role: 'user',
+      content: `Your previous response had these quality issues:\n${feedbackContext.qaFailures.map(f => `- ${f}`).join('\n')}\n\nPlease regenerate the JSON fixing these specific issues. Ensure you provide at least 3-5 detailed features, a clear target audience, a problem statement of 2-3 full sentences (30-150 words), and a tagline under 12 words. Keep what was good, only fix the flagged problems.`,
+    });
+  }
+
+  log.info(`Sending ${userMessage.length} chars to Claude...${feedbackContext ? ' (with feedback)' : ''}`);
 
   const response = await client.messages.create({
     model: modelUsed,
     max_tokens: config.claude.maxOutputTokens,
     system: SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: userMessage }],
+    messages,
   });
 
   // Extract text content

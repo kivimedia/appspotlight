@@ -66,24 +66,79 @@ export async function captureScreenshots(
       sizeKb: homeBuffer.length / 1024,
     });
 
-    // Try to find and click interactive elements for more screenshots
-    const links = await findInternalLinks(desktopPage, deployedUrl);
+    // Try scrolling down the home page for "below the fold" content
+    const pageHeight = await desktopPage.evaluate(() => document.body.scrollHeight);
+    const viewportHeight = config.screenshots.desktopViewport.height;
 
-    for (let i = 0; i < Math.min(links.length, 2); i++) {
+    if (pageHeight > viewportHeight * 1.5) {
+      // Scroll to middle of page and capture
       try {
-        await navigateSafely(desktopPage, links[i]);
-        await desktopPage.waitForTimeout(config.screenshots.waitAfterLoadMs);
-
-        const buf = await captureAndOptimize(desktopPage, config);
-        screenshots.push({
-          buffer: buf,
-          filename: `${repoName}-screen${i + 2}-desktop.webp`,
-          label: SCREEN_LABELS[i + 1] ?? `Screen ${i + 2}`,
-          viewport: 'desktop',
-          sizeKb: buf.length / 1024,
-        });
+        await desktopPage.evaluate((vh) => window.scrollTo(0, vh), viewportHeight);
+        await desktopPage.waitForTimeout(1000);
+        const midBuf = await captureAndOptimize(desktopPage, config);
+        if (midBuf.length / 1024 >= 5) {
+          screenshots.push({
+            buffer: midBuf,
+            filename: `${repoName}-scroll-mid-desktop.webp`,
+            label: 'Features / Content',
+            viewport: 'desktop',
+            sizeKb: midBuf.length / 1024,
+          });
+        }
       } catch (e) {
-        log.warn(`Failed to capture screen ${i + 2}: ${(e as Error).message}`);
+        log.warn(`Scroll-mid screenshot failed: ${(e as Error).message}`);
+      }
+
+      // Scroll to bottom and capture
+      if (pageHeight > viewportHeight * 2.5) {
+        try {
+          await desktopPage.evaluate(() => window.scrollTo(0, document.body.scrollHeight - window.innerHeight));
+          await desktopPage.waitForTimeout(1000);
+          const bottomBuf = await captureAndOptimize(desktopPage, config);
+          if (bottomBuf.length / 1024 >= 5) {
+            screenshots.push({
+              buffer: bottomBuf,
+              filename: `${repoName}-scroll-bottom-desktop.webp`,
+              label: 'Footer / CTA',
+              viewport: 'desktop',
+              sizeKb: bottomBuf.length / 1024,
+            });
+          }
+        } catch (e) {
+          log.warn(`Scroll-bottom screenshot failed: ${(e as Error).message}`);
+        }
+      }
+
+      // Scroll back to top for further navigation
+      await desktopPage.evaluate(() => window.scrollTo(0, 0));
+    }
+
+    // Try internal links only if we still need more screenshots
+    if (screenshots.length < config.screenshots.maxScreenshots) {
+      const links = await findInternalLinks(desktopPage, deployedUrl);
+
+      for (let i = 0; i < Math.min(links.length, 2); i++) {
+        if (screenshots.length >= config.screenshots.maxScreenshots) break;
+        try {
+          await navigateSafely(desktopPage, links[i]);
+          await desktopPage.waitForTimeout(config.screenshots.waitAfterLoadMs);
+
+          const buf = await captureAndOptimize(desktopPage, config);
+          // Skip blank/near-blank screenshots (< 5KB is likely empty)
+          if (buf.length / 1024 < 5) {
+            log.warn(`Skipping blank screenshot from ${links[i]} (${(buf.length / 1024).toFixed(1)}KB)`);
+            continue;
+          }
+          screenshots.push({
+            buffer: buf,
+            filename: `${repoName}-screen${i + 2}-desktop.webp`,
+            label: SCREEN_LABELS[i + 1] ?? `Screen ${i + 2}`,
+            viewport: 'desktop',
+            sizeKb: buf.length / 1024,
+          });
+        } catch (e) {
+          log.warn(`Failed to capture screen ${i + 2}: ${(e as Error).message}`);
+        }
       }
     }
 

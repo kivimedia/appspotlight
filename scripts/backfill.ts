@@ -25,8 +25,9 @@ import {
   completeRunRecord,
   failRunRecord,
   checkBudget,
+  updateRunRecord,
 } from '@appspotlight/shared';
-import { analyzeRepo } from '@appspotlight/analyst';
+import { analyzeRepo, regenerateContent } from '@appspotlight/analyst';
 import { publishApp, findPageBySlug } from '@appspotlight/publisher';
 
 const log = createLogger('backfill');
@@ -238,13 +239,46 @@ async function main(): Promise<void> {
       const startTime = Date.now();
 
       // Analyst
-      const analystOutput = await analyzeRepo({
+      let analystOutput = await analyzeRepo({
         repoUrl: repo.clone_url,
         deployedUrl: repo.homepage,
       });
 
       // Publisher
-      const publishResult = await publishApp(analystOutput);
+      let publishResult = await publishApp(analystOutput);
+
+      // Auto-retry if QA failed and confidence is salvageable
+      if (!publishResult.qaResult.passed && analystOutput.confidence >= 40) {
+        log.info(`  QA failed — retrying with feedback (confidence=${analystOutput.confidence})...`);
+        log.info(`  Failures: ${publishResult.qaResult.failures.join('; ')}`);
+
+        try {
+          const retryOutput = await regenerateContent(
+            repo.clone_url,
+            analystOutput,
+            publishResult.qaResult.failures
+          );
+
+          const retryPublishResult = await publishApp(retryOutput);
+
+          if (retryPublishResult.qaResult.passed ||
+              retryPublishResult.qaResult.failures.length < publishResult.qaResult.failures.length) {
+            log.info(`  Retry improved (${retryPublishResult.qaResult.failures.length} failures vs ${publishResult.qaResult.failures.length})`);
+            analystOutput = retryOutput;
+            publishResult = retryPublishResult;
+          } else {
+            log.info('  Retry did not improve — keeping original');
+          }
+
+          await updateRunRecord(runId, {
+            retry_count: 1,
+            retry_cost_usd: retryOutput.costData.total_cost_usd,
+            retry_qa_failures: publishResult.qaResult.failures,
+          });
+        } catch (retryErr) {
+          log.error(`  Retry failed: ${(retryErr as Error).message} — keeping original`);
+        }
+      }
 
       // Log completion
       await completeRunRecord(
@@ -256,7 +290,8 @@ async function main(): Promise<void> {
           status: publishResult.pageResult.status,
         },
         analystOutput.confidence,
-        publishResult.qaResult
+        publishResult.qaResult,
+        analystOutput.content
       );
 
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
