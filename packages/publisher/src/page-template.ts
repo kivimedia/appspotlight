@@ -140,9 +140,9 @@ function buildGlobalStyles(): string {
   .entry-content p:has(.appspotlight-icon) {
     font-size: inherit !important;
   }
-  /* Audience emoji paragraphs (2.5rem) */
-  .entry-content p[style*="font-size:2.5rem"],
-  .entry-content p[style*="font-size:2rem"] {
+  /* Audience + feature emoji paragraphs (3.6rem / 4.5rem) */
+  .entry-content p[style*="font-size:4.5rem"],
+  .entry-content p[style*="font-size:3.6rem"] {
     font-size: inherit !important;
   }
   /* Problem/Solution card hover */
@@ -249,6 +249,21 @@ function buildGlobalStyles(): string {
   .appspotlight-lightbox-close:hover {
     opacity: 1;
   }
+  /* Kill stray empty elements — Divi/WP artifacts, empty inputs, etc. */
+  .entry-content > div:empty,
+  .entry-content input:not([type="submit"]),
+  .entry-content textarea,
+  .entry-content iframe:not([src*="youtube"]):not([src*="vimeo"]),
+  #et-boc .et-fb-root-ancestor,
+  .et_pb_section--absolute,
+  .et-fb-button,
+  #et_pb_layout .et_pb_module:empty {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
   /* All buttons — base transition */
   .entry-content .wp-block-button__link {
     transition: box-shadow 0.25s ease, transform 0.25s ease, background-color 0.25s ease, color 0.25s ease !important;
@@ -314,7 +329,7 @@ function buildProblemSolutionSection(content: AppContent): string {
 <div class="wp-block-column appspotlight-ps-card" style="background-color:#111;border-radius:16px;padding-top:2.5rem;padding-right:2.5rem;padding-bottom:2.5rem;padding-left:2.5rem">
 
 <!-- wp:paragraph {"style":{"typography":{"fontSize":"0.75rem","fontWeight":"700","textTransform":"uppercase","letterSpacing":"0.15em"},"color":{"text":"#cf2e2e"}}} -->
-<p style="color:#cf2e2e;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em">The Problem</p>
+<p style="color:#ff6b6b;font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em">The Problem</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph {"style":{"color":{"text":"#abb8c3"}}} -->
@@ -328,7 +343,7 @@ function buildProblemSolutionSection(content: AppContent): string {
 <div class="wp-block-column appspotlight-ps-card" style="background-color:#111;border-radius:16px;padding-top:2.5rem;padding-right:2.5rem;padding-bottom:2.5rem;padding-left:2.5rem">
 
 <!-- wp:paragraph {"style":{"typography":{"fontSize":"0.75rem","fontWeight":"700","textTransform":"uppercase","letterSpacing":"0.15em"},"color":{"text":"#00d084"}}} -->
-<p style="color:#00d084;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em">The Solution</p>
+<p style="color:#51cf66;font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em">The Solution</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph {"style":{"color":{"text":"#abb8c3"}}} -->
@@ -351,8 +366,8 @@ function buildFeaturesSection(content: AppContent): string {
     return `<!-- wp:column {"className":"appspotlight-feature-card","style":{"color":{"background":"#111111"},"border":{"radius":"16px"},"spacing":{"padding":{"top":"2rem","right":"2rem","bottom":"2rem","left":"2rem"}}}} -->
 <div class="wp-block-column appspotlight-feature-card" style="background-color:#111;border-radius:16px;padding-top:2rem;padding-right:2rem;padding-bottom:2rem;padding-left:2rem">
 
-<!-- wp:paragraph {"style":{"typography":{"fontSize":"2rem"}}} -->
-<p style="font-size:2rem"><span class="appspotlight-icon">${icon}</span></p>
+<!-- wp:paragraph {"style":{"typography":{"fontSize":"3.6rem"}}} -->
+<p style="font-size:3.6rem"><span class="appspotlight-icon">${icon}</span></p>
 <!-- /wp:paragraph -->
 
 <!-- wp:heading {"level":3,"style":{"typography":{"fontSize":"1.1rem","fontWeight":"700"},"color":{"text":"#ffffff"}}} -->
@@ -448,7 +463,7 @@ ${rows.join('\n\n')}
 
 function buildTechStackSection(content: AppContent): string {
   const badges = content.tech_stack.map(tech =>
-    `<span class="appspotlight-badge-item" style="display:inline-block;background:#1e2440;border:1px solid rgba(255,255,255,0.15);border-radius:100px;padding:10px 20px;margin:5px;font-size:0.9rem;color:#d1d5e8;font-family:'Open Sans','Poppins',sans-serif;letter-spacing:0.02em">${esc(tech)}</span>`
+    `<span class="appspotlight-badge-item" style="display:inline-block;background:#1e2440;border:1px solid rgba(255,255,255,0.15);border-radius:100px;padding:12px 24px;margin:6px;font-size:1.05rem;color:#d1d5e8;font-family:'Open Sans','Poppins',sans-serif;letter-spacing:0.02em">${esc(tech)}</span>`
   ).join('');
 
   return `<!-- wp:group {"className":"appspotlight-tech-stack","style":{"spacing":{"padding":{"top":"4rem","bottom":"4rem","left":"2rem","right":"2rem"},"margin":{"top":"0","bottom":"0"}},"color":{"background":"#000000"}}} -->
@@ -498,15 +513,15 @@ function buildAudienceSection(content: AppContent): string {
   const cards = audienceSegments.map((segment, i) => {
     const benefitBlock = segment.benefit
       ? `\n<!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"0.9rem"},"color":{"text":"#8a94a8"},"spacing":{"margin":{"top":"0.5rem"}}}} -->
-<p class="has-text-align-center" style="color:#8a94a8;font-size:0.9rem;margin-top:0.5rem">${esc(segment.benefit)}</p>
+<p class="has-text-align-center" style="color:#b0bec5;font-size:1rem;margin-top:0.5rem">${esc(segment.benefit)}</p>
 <!-- /wp:paragraph -->`
       : '';
 
     return `<!-- wp:column {"className":"appspotlight-audience-card","style":{"color":{"background":"#111111"},"border":{"radius":"16px"},"spacing":{"padding":{"top":"2rem","right":"2rem","bottom":"2rem","left":"2rem"}}}} -->
 <div class="wp-block-column appspotlight-audience-card" style="background-color:#111;border-radius:16px;padding-top:2rem;padding-right:2rem;padding-bottom:2rem;padding-left:2rem">
 
-<!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"2.5rem"}}} -->
-<p class="has-text-align-center" style="font-size:2.5rem">${emojis[i % emojis.length]}</p>
+<!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"4.5rem"}}} -->
+<p class="has-text-align-center" style="font-size:4.5rem">${emojis[i % emojis.length]}</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph {"align":"center","style":{"typography":{"fontWeight":"600"},"color":{"text":"#ffffff"}}} -->

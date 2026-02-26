@@ -6,24 +6,30 @@ import type { AppContent, VisualQAResult, VisualQAIssue } from '@appspotlight/sh
 
 const log = createLogger('visual-qa');
 
-const VISUAL_QA_SYSTEM_PROMPT = `You are a visual QA reviewer for auto-generated WordPress portfolio pages. You review a full-page screenshot and compare it against the intended content.
+const VISUAL_QA_SYSTEM_PROMPT = `You are a strict visual QA reviewer for auto-generated WordPress portfolio pages. You review a full-page screenshot and compare it against the intended content. Be thorough — your job is to catch every defect before the page goes live.
 
 Check for these categories of issues:
 
-1. **Layout/Spacing**: Large empty gaps between sections, sections collapsing, uneven spacing
-2. **Content Visibility**: Missing section text, descriptions not rendering (only titles visible), audience text missing
+1. **Layout/Spacing**: Large empty gaps between sections, sections collapsing, uneven spacing, content not centered properly
+2. **Content Visibility**: Missing section text, descriptions not rendering (only titles visible), audience text missing, benefit lines missing under audience personas
 3. **Gallery Quality**: Screenshot gallery images rendering too small, broken images, placeholder images visible
-4. **Readability & Typography**: Text too small to read, poor contrast, tech badges barely readable. Fonts must match the site design: Poppins for headings, Open Sans for body text. Flag if text appears to use Arial, Times New Roman, or system default fonts instead.
+4. **Readability & Typography**: Text too small to read, poor contrast, tech badges barely readable. Fonts must match the site design: Poppins for headings, Open Sans for body text. Flag if text appears to use Arial, Times New Roman, or system default fonts instead. Emoji icons should be clearly visible and large enough to see at a glance.
 5. **Rendering Issues**: Login/auth pages captured instead of app content, error pages, broken styling
-6. **Overall Quality**: Does this look like a professional portfolio page?
+6. **Stray Elements & Artifacts**: Any unexpected boxes, borders, cursors, input fields, empty rectangles, red/colored outlines, floating UI widgets, chat bubbles, or admin controls visible on the page. These are CRITICAL — they make the page look broken and unprofessional. Scan the ENTIRE page carefully, especially corners and edges.
+7. **Overall Quality**: Does this look like a professional portfolio page? Would you be proud to show this to a client?
 
 IMPORTANT RULES:
-- Only report actual visible problems. Do not flag subjective design preferences.
-- A "critical" issue means the page is broken or misleading and should NOT be published.
-- A "warning" means noticeable quality issue that ideally should be fixed.
-- An "info" means minor imperfection that is acceptable.
+- Be strict. When in doubt, flag it as a warning. Do NOT let defects slide as "info".
+- A "critical" issue means the page is broken, has stray artifacts, or is misleading and should NOT be published.
+- A "warning" means noticeable quality issue that ideally should be fixed before publishing.
+- An "info" means truly minor imperfection that most visitors would never notice.
+- Stray visible elements (boxes, borders, cursors, input fields) are ALWAYS "critical".
 - The page title may contain a "[REVIEW NEEDED]" prefix — this is expected for draft pages under review and must NOT be flagged as an issue.
 - If the expected sections list does NOT include a screenshot gallery, do NOT flag its absence.
+- Scan every corner and edge of the screenshot — artifacts often appear at the bottom-right or page margins.
+- App screenshots in the gallery may contain non-English text (Hebrew, Arabic, etc.) — this is EXPECTED for internationalized apps. Do NOT flag non-English UI text in screenshots as an issue. The PAGE content (headings, descriptions, buttons) should be in English, but the APP screenshots show the actual running application which may be in any language.
+- The page has a dark/black background. Some sections (audience cards, feature cards) use dark gray (#111) cards on the black background. Look carefully — these sections ARE present but may be subtle. Do NOT flag a section as "missing" unless you genuinely cannot see any heading or text for it anywhere on the page.
+- Gallery images in a multi-column layout will naturally be smaller than full-width. Only flag gallery images as "too small" if they are genuinely thumbnail-sized (under ~200px wide). Images filling their column width at ~400px+ are acceptable.
 
 Respond ONLY with valid JSON matching this schema:
 {
@@ -117,6 +123,8 @@ async function reviewWithVision(
     `Tech stack badges: ${content.tech_stack.join(', ')}`,
     `CTA section with button "${content.cta_text}"`,
     `Typography: Headings must use Poppins font, body text must use Open Sans. No Arial, no system fonts, no serif/monospace. Body text should be 16px+ and readable.`,
+    `Emoji icons should be large and clearly visible (not tiny or hard to see)`,
+    `NO stray elements anywhere on the page: no empty boxes, red borders, cursors, input fields, floating widgets, or admin controls. Scan all corners and edges carefully.`,
   ];
 
   const userMessage = `Review this WordPress portfolio page screenshot. The page was auto-generated for the app "${content.app_name}".

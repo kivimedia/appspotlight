@@ -103,7 +103,17 @@ export async function runQAChecks(
     checks.push(blurCheck);
   }
 
-  // 4. CTA URL validation
+  // 4. CTA button text length — max 4 words
+  const ctaWordCount = (content.cta_text ?? '').trim().split(/\s+/).length;
+  checks.push({
+    name: 'cta_text_length',
+    passed: ctaWordCount <= 4,
+    message: ctaWordCount <= 4
+      ? `CTA text is ${ctaWordCount} words (OK)`
+      : `CTA text is ${ctaWordCount} words: "${content.cta_text}" (max 4 words)`,
+  });
+
+  // 5. CTA URL validation
   checks.push(await checkCtaUrl(content.cta_url));
 
   // Compile results

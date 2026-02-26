@@ -57,7 +57,7 @@ const OUTPUT_SCHEMA = {
       items: { type: 'string' as const },
       description: 'Primary technologies used',
     },
-    cta_text: { type: 'string' as const, description: 'Call to action button text' },
+    cta_text: { type: 'string' as const, description: 'Call to action button text — MUST be 4 words or fewer (e.g. "Try ChoirMind Free", "Get Started Now", "Try It Free"). Keep it short and punchy.' },
     cta_url: { type: 'string' as const, description: 'Link destination' },
   },
   required: ['app_name', 'tagline', 'problem_statement', 'target_audience', 'features', 'benefits', 'tech_stack', 'cta_text', 'cta_url'],
@@ -162,6 +162,14 @@ Generate the JSON content now. If the app has a deployed URL, use it for cta_url
   // Log what we got for debugging
   log.info(`Parsed fields: app_name=${!!content.app_name}, tagline=${!!content.tagline}, features=${content.features?.length ?? 0}, audience=${!!content.target_audience}`);
 
+  // Coerce fields that Claude sometimes returns as arrays instead of strings
+  if (Array.isArray(content.target_audience)) {
+    content.target_audience = content.target_audience.join(' | ');
+  }
+  if (typeof content.target_audience !== 'string') {
+    content.target_audience = '';
+  }
+
   // Validate minimum required fields — fill defaults for missing optional ones
   if (!content.app_name) {
     content.app_name = repoFiles.meta.repoName;
@@ -214,6 +222,12 @@ Generate the JSON content now. If the app has a deployed URL, use it for cta_url
   }
   if (!content.cta_text) {
     content.cta_text = 'Learn More';
+  }
+  // Enforce max 4 words for CTA button text
+  const ctaWords = content.cta_text.trim().split(/\s+/);
+  if (ctaWords.length > 4) {
+    log.warn(`  CTA text too long (${ctaWords.length} words): "${content.cta_text}" — truncating to 4 words`);
+    content.cta_text = ctaWords.slice(0, 4).join(' ');
   }
   if (!content.cta_url) {
     content.cta_url = repoFiles.meta.homepageUrl ?? '/contact';
