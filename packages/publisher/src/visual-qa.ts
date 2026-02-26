@@ -13,7 +13,7 @@ Check for these categories of issues:
 1. **Layout/Spacing**: Large empty gaps between sections, sections collapsing, uneven spacing
 2. **Content Visibility**: Missing section text, descriptions not rendering (only titles visible), audience text missing
 3. **Gallery Quality**: Screenshot gallery images rendering too small, broken images, placeholder images visible
-4. **Readability & Typography**: Text too small to read, poor contrast, tech badges barely readable, inconsistent font families (headings should use a consistent sans-serif display font, body text a clean sans-serif), font weights too light or too heavy for the section
+4. **Readability & Typography**: Text too small to read, poor contrast, tech badges barely readable. Fonts must match the site design: Poppins for headings, Open Sans for body text. Flag if text appears to use Arial, Times New Roman, or system default fonts instead.
 5. **Rendering Issues**: Login/auth pages captured instead of app content, error pages, broken styling
 6. **Overall Quality**: Does this look like a professional portfolio page?
 
@@ -116,7 +116,7 @@ async function reviewWithVision(
     `Audience section: "${content.target_audience}"`,
     `Tech stack badges: ${content.tech_stack.join(', ')}`,
     `CTA section with button "${content.cta_text}"`,
-    `Typography: Headings should use consistent sans-serif font, body text readable at 16px+, no serif/monospace mixing in content areas`,
+    `Typography: Headings must use Poppins font, body text must use Open Sans. No Arial, no system fonts, no serif/monospace. Body text should be 16px+ and readable.`,
   ];
 
   const userMessage = `Review this WordPress portfolio page screenshot. The page was auto-generated for the app "${content.app_name}".

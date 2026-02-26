@@ -75,6 +75,7 @@ ${innerContent}
 
 function buildGlobalStyles(): string {
   return `<!-- wp:html -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   /* Force black background — only content area, preserve header/nav */
   #main-content, #left-area,
@@ -120,11 +121,12 @@ function buildGlobalStyles(): string {
     margin-top: 0 !important;
   }
   /* Font standards — match homepage (Poppins headings, Open Sans body, min 18px) */
+  /* NEVER use Arial or system fonts — only Poppins + Open Sans from Google Fonts */
   .entry-content h1, .entry-content h2, .entry-content h3 {
-    font-family: 'Poppins', 'Open Sans', Arial, sans-serif !important;
+    font-family: 'Poppins', 'Open Sans', sans-serif !important;
   }
   .entry-content p, .entry-content li, .entry-content span {
-    font-family: 'Open Sans', Arial, sans-serif !important;
+    font-family: 'Open Sans', 'Poppins', sans-serif !important;
   }
   /* Min 18px for body text, but exclude small labels and icon paragraphs */
   .entry-content p {
@@ -446,7 +448,7 @@ ${rows.join('\n\n')}
 
 function buildTechStackSection(content: AppContent): string {
   const badges = content.tech_stack.map(tech =>
-    `<span class="appspotlight-badge-item" style="display:inline-block;background:#1e2440;border:1px solid rgba(255,255,255,0.15);border-radius:100px;padding:10px 20px;margin:5px;font-size:0.9rem;color:#d1d5e8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;letter-spacing:0.02em">${esc(tech)}</span>`
+    `<span class="appspotlight-badge-item" style="display:inline-block;background:#1e2440;border:1px solid rgba(255,255,255,0.15);border-radius:100px;padding:10px 20px;margin:5px;font-size:0.9rem;color:#d1d5e8;font-family:'Open Sans','Poppins',sans-serif;letter-spacing:0.02em">${esc(tech)}</span>`
   ).join('');
 
   return `<!-- wp:group {"className":"appspotlight-tech-stack","style":{"spacing":{"padding":{"top":"4rem","bottom":"4rem","left":"2rem","right":"2rem"},"margin":{"top":"0","bottom":"0"}},"color":{"background":"#000000"}}} -->

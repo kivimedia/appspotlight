@@ -41,7 +41,17 @@ export async function runQAChecks(
       : `target_audience is specific: "${content.target_audience}"`,
   });
 
-  // 1c. No em dashes — Claude loves them but they look AI-generated
+  // 1c. Audience benefit lines — each persona should have a ": benefit" line
+  const hasAudienceBenefits = (content.target_audience ?? '').includes(':');
+  checks.push({
+    name: 'audience_has_benefits',
+    passed: hasAudienceBenefits,
+    message: hasAudienceBenefits
+      ? 'Audience segments include benefit lines'
+      : 'target_audience is missing benefit lines (no "Persona: benefit" format found)',
+  });
+
+  // 1d. No em dashes — Claude loves them but they look AI-generated
   const allText = [
     content.tagline,
     content.problem_statement,

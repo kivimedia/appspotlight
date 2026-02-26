@@ -173,18 +173,38 @@ Generate the JSON content now. If the app has a deployed URL, use it for cta_url
     content.features = [{ title: 'Core Feature', description: 'See repository for details.' }];
   }
   if (!content.target_audience || content.target_audience.toLowerCase() === 'developers') {
-    // Infer audience from tagline/app_name instead of generic "Developers"
+    // Infer audience with benefit lines (pipe-separated format)
     const hint = `${content.app_name} ${content.tagline} ${content.problem_statement}`.toLowerCase();
     if (hint.includes('choir') || hint.includes('sing') || hint.includes('vocal') || hint.includes('music')) {
-      content.target_audience = 'Choir singers, Choir conductors, Music educators';
+      content.target_audience = "Choir singers: Practice at your own pace with smart repetition | Choir conductors: Track every singer's progress in one dashboard | Music educators: Build custom playlists aligned to your curriculum";
     } else if (hint.includes('cook') || hint.includes('recipe') || hint.includes('food')) {
-      content.target_audience = 'Home cooks, Food enthusiasts, Recipe creators';
+      content.target_audience = 'Home cooks: Discover and save recipes tailored to your taste | Food enthusiasts: Explore new cuisines with guided instructions | Recipe creators: Share your dishes with a growing community';
     } else if (hint.includes('fitness') || hint.includes('workout') || hint.includes('health')) {
-      content.target_audience = 'Fitness enthusiasts, Personal trainers, Health-conscious individuals';
+      content.target_audience = 'Fitness enthusiasts: Track workouts and see real progress | Personal trainers: Manage client programs from one dashboard | Health-conscious individuals: Build sustainable habits with smart reminders';
     } else {
-      content.target_audience = 'End users, Teams, Organizations';
+      content.target_audience = 'End users: Get things done faster with an intuitive interface | Teams: Collaborate seamlessly with shared workspaces | Organizations: Scale operations with built-in analytics';
     }
     log.info(`  Inferred target audience: ${content.target_audience}`);
+  }
+  // Ensure audience has benefit lines — if it's comma-separated without colons, reformat with benefits
+  if (content.target_audience && !content.target_audience.includes(':')) {
+    log.warn('  target_audience has no benefit lines (no colons found) — auto-reformatting with benefits');
+    // Parse the existing personas (comma, pipe, or newline separated)
+    const personas = content.target_audience
+      .split(/[|,\n]/)
+      .map(s => s.trim())
+      .filter(Boolean);
+    // Try to match known domain and add benefit lines
+    const hint = `${content.app_name} ${content.tagline} ${content.problem_statement}`.toLowerCase();
+    if (hint.includes('choir') || hint.includes('sing') || hint.includes('vocal') || hint.includes('music')) {
+      content.target_audience = "Choir singers: Practice at your own pace with smart repetition | Choir conductors: Track every singer's progress in one dashboard | Music educators: Build custom playlists aligned to your curriculum";
+    } else if (personas.length >= 2) {
+      // Generic fallback: append a generic benefit to each persona
+      content.target_audience = personas.map(p => `${p}: Enjoy a streamlined experience built for your needs`).join(' | ');
+    } else {
+      content.target_audience = 'End users: Get things done faster with an intuitive interface | Teams: Collaborate seamlessly with shared workspaces | Organizations: Scale operations with built-in analytics';
+    }
+    log.info(`  Reformatted target audience: ${content.target_audience}`);
   }
   if (!content.benefits) {
     content.benefits = ['Streamlined workflow'];
