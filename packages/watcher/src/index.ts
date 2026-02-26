@@ -11,9 +11,9 @@ import {
   getDraftRuns,
   getRunById,
 } from '@appspotlight/shared';
-import type { ReviewAction } from '@appspotlight/shared';
+import type { ReviewAction, VisualQAResult } from '@appspotlight/shared';
 import { analyzeRepo, regenerateContent } from '@appspotlight/analyst';
-import { publishApp, publishDraftPage } from '@appspotlight/publisher';
+import { publishApp, publishDraftPage, runVisualQAWithRetry } from '@appspotlight/publisher';
 import { validateSignature, parseWebhookEvent, checkCooldown } from './webhook-handler.js';
 
 const log = createLogger('watcher');
@@ -134,6 +134,19 @@ async function processPipeline(
       }
     }
 
+    // Visual QA (with retry)
+    const vqaResult = await runVisualQAWithRetry({
+      runId,
+      repoUrl: event.cloneUrl,
+      analystOutput,
+      publishResult,
+      publishApp,
+      regenerateContent,
+    });
+    analystOutput = vqaResult.analystOutput;
+    publishResult = vqaResult.publishResult;
+    const visualQAResult: VisualQAResult | undefined = vqaResult.visualQAResult;
+
     // Log completion
     await completeRunRecord(
       runId,
@@ -145,7 +158,12 @@ async function processPipeline(
       },
       analystOutput.confidence,
       publishResult.qaResult,
-      analystOutput.content
+      analystOutput.content,
+      visualQAResult ? {
+        passed: visualQAResult.passed,
+        issues: visualQAResult.issues.map(i => `[${i.severity}] [${i.category}] ${i.description}`),
+        cost_usd: visualQAResult.costData.cost_usd,
+      } : null
     );
 
     log.info(`✓ Pipeline complete: ${event.repoName} → ${publishResult.pageResult.pageUrl}`);

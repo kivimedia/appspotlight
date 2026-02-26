@@ -46,8 +46,9 @@ export async function createRunRecord(
         auto_check_failures, human_edits, retry_qa_failures,
         claude_input_tokens, claude_output_tokens, claude_model_used,
         claude_cost_usd, screenshot_duration_sec, screenshot_cost_usd, total_cost_usd,
-        retry_count, retry_cost_usd
-      ) VALUES ($1, $2, $3, 'running', NOW(), '{}', '[]', '{}', 0, 0, '', 0, 0, 0, 0, 0, 0)`,
+        retry_count, retry_cost_usd,
+        visual_qa_retry_count, visual_qa_retry_cost_usd
+      ) VALUES ($1, $2, $3, 'running', NOW(), '{}', '[]', '{}', 0, 0, '', 0, 0, 0, 0, 0, 0, 0, 0)`,
       [runId, repoName, eventType]
     );
   } catch (err) {
@@ -71,7 +72,7 @@ export async function updateRunRecord(
   let paramIdx = 1;
 
   for (const [key, value] of entries) {
-    if (key === 'auto_check_failures' || key === 'retry_qa_failures') {
+    if (key === 'auto_check_failures' || key === 'retry_qa_failures' || key === 'visual_qa_issues') {
       setClauses.push(`${key} = $${paramIdx}::text[]`);
     } else if (key === 'human_edits' || key === 'generated_content') {
       setClauses.push(`${key} = $${paramIdx}::jsonb`);
@@ -106,7 +107,8 @@ export async function completeRunRecord(
   pageResult: { pageId: number; pageUrl: string; status: string } | null,
   confidence: number,
   qaResult: { passed: boolean; failures: string[] },
-  generatedContent?: AppContent | null
+  generatedContent?: AppContent | null,
+  visualQA?: { passed: boolean; issues: string[]; cost_usd: number } | null
 ): Promise<void> {
   const publishAction = pageResult
     ? (pageResult.status === 'publish' ? 'auto_published' : 'draft_approved')
@@ -126,6 +128,12 @@ export async function completeRunRecord(
 
   if (generatedContent) {
     updates.generated_content = generatedContent;
+  }
+
+  if (visualQA) {
+    updates.visual_qa_passed = visualQA.passed;
+    updates.visual_qa_issues = visualQA.issues;
+    updates.visual_qa_cost_usd = visualQA.cost_usd;
   }
 
   await updateRunRecord(runId, updates);

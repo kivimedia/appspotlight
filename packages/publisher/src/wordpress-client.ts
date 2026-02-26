@@ -123,6 +123,22 @@ export async function publishDraftPage(pageId: number): Promise<WPPageResult> {
   };
 }
 
+export async function revertToDraft(pageId: number): Promise<WPPageResult> {
+  const result = await wpFetch<{ id: number; link: string; status: string }>(
+    `/pages/${pageId}`,
+    { method: 'PUT', body: { status: 'draft' } }
+  );
+
+  log.info(`Reverted page to draft: ${result.link}`);
+
+  return {
+    pageId: result.id,
+    pageUrl: result.link,
+    status: 'draft',
+    action: 'updated',
+  };
+}
+
 export async function fetchChildPages(parentSlug: string): Promise<Array<{ id: number; link: string; title: string; content: string; status: string }>> {
   // First find the parent page ID
   const parent = await findPageBySlug(parentSlug);

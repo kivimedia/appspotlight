@@ -46,9 +46,37 @@
   "watcher": {
     "port": 3100
   },
+  "visualQA": {
+    "enabled": true,
+    "model": "claude-sonnet-4-5-20250929",
+    "maxTokens": 1500,
+    "failOnCritical": true,
+    "failThreshold": 3,
+    "retryEnabled": true,
+    "maxRetries": 1,
+    "retryableCategories": ["content", "readability"]
+  },
+  "vercel": {
+    "token": "",
+    "teamId": ""
+  },
   "deployUrlMap": {
     "boards": "https://boards-one.vercel.app",
     "choirmind": "https://choirmind.vercel.app",
     "KaraokeMadness": "https://karaoke-madness.vercel.app"
+  },
+  "appAuth": {
+    "choirmind": {
+      "loginPath": "/auth/signin",
+      "multiStep": true,
+      "continueButtonText": "המשך|continue",
+      "signInButtonText": "כניסה|sign in|התחבר",
+      "postLoginPages": [
+        { "path": "/dashboard", "label": "Dashboard" },
+        { "path": "/songs", "label": "Song Library" },
+        { "path": "/practice", "label": "Practice" }
+      ],
+      "waitAfterLoginMs": 5000
+    }
   }
 }

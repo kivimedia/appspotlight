@@ -46,7 +46,7 @@ export async function publishApp(analystOutput: AnalystOutput): Promise<PublishR
   // Step 3: Generate page markup
   log.info('Step 3/4: Generating page markup...');
   const slug = repoMeta.repoName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-  const markup = generatePageMarkup(content, mediaResults, repoMeta.repoName, confidence);
+  const markup = generatePageMarkup(content, mediaResults, repoMeta.repoName, confidence, repoMeta.repoUrl);
 
   // Step 4: Create or update page
   log.info('Step 4/4: Creating/updating WordPress page...');
@@ -79,6 +79,9 @@ export async function publishApp(analystOutput: AnalystOutput): Promise<PublishR
 }
 
 // Re-export sub-modules
-export { findPageBySlug, createPage, updatePage, uploadAllScreenshots, publishDraftPage, fetchChildPages } from './wordpress-client.js';
+export { findPageBySlug, createPage, updatePage, uploadAllScreenshots, publishDraftPage, revertToDraft, fetchChildPages } from './wordpress-client.js';
 export { generatePageMarkup } from './page-template.js';
 export { runQAChecks } from './qa-checks.js';
+export { runVisualQA } from './visual-qa.js';
+export { runVisualQAWithRetry } from './visual-qa-retry.js';
+export type { VQARetryOptions, VQARetryResult } from './visual-qa-retry.js';

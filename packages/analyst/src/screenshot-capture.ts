@@ -1,7 +1,7 @@
 import { chromium, type Browser, type Page } from 'playwright';
 import sharp from 'sharp';
-import { createLogger, getConfig } from '@appspotlight/shared';
-import type { ScreenshotResult } from '@appspotlight/shared';
+import { createLogger, getConfig, getAppAuthCredentials } from '@appspotlight/shared';
+import type { ScreenshotResult, AppAuthStrategy } from '@appspotlight/shared';
 
 const log = createLogger('screenshots');
 
@@ -31,6 +31,200 @@ export async function captureScreenshots(
 
   log.info(`Capturing screenshots from ${deployedUrl}`);
 
+  // Check if this app has an auth strategy for post-login screenshots
+  const authStrategy = config.appAuth?.[repoName];
+  const credentials = getAppAuthCredentials(repoName);
+
+  if (authStrategy && credentials) {
+    log.info(`Auth strategy found for "${repoName}" — attempting authenticated capture`);
+    try {
+      const authResult = await captureAuthenticatedScreenshots(
+        deployedUrl, repoName, authStrategy, credentials, config, startTime
+      );
+      if (authResult.screenshots.length > 0) {
+        return authResult;
+      }
+      log.warn('Auth capture returned 0 screenshots — falling back to public capture');
+    } catch (e) {
+      log.warn(`Auth capture failed: ${(e as Error).message} — falling back to public capture`);
+    }
+  }
+
+  // Public (unauthenticated) capture — existing flow
+  return capturePublicScreenshots(deployedUrl, repoName, config, startTime);
+}
+
+// ─── Authenticated Capture ──────────────────────────────────────────────────
+
+async function captureAuthenticatedScreenshots(
+  deployedUrl: string,
+  repoName: string,
+  strategy: AppAuthStrategy,
+  credentials: { email: string; password: string },
+  config: ReturnType<typeof getConfig>,
+  startTime: number
+): Promise<{ screenshots: ScreenshotResult[]; durationSec: number }> {
+  const screenshots: ScreenshotResult[] = [];
+  const browser = await chromium.launch({ headless: true });
+
+  try {
+    // Desktop context for login + screenshots
+    const desktopCtx = await browser.newContext({
+      viewport: config.screenshots.desktopViewport,
+    });
+    const desktopPage = await desktopCtx.newPage();
+
+    // Login
+    const loginOk = await executeLogin(desktopPage, deployedUrl, strategy, credentials);
+    if (!loginOk) {
+      await browser.close();
+      throw new Error('Login failed — could not authenticate');
+    }
+
+    // Capture each post-login page (desktop)
+    for (const target of strategy.postLoginPages) {
+      if (screenshots.length >= config.screenshots.maxScreenshots - 1) break; // reserve 1 for mobile
+      try {
+        const targetUrl = deployedUrl.replace(/\/$/, '') + target.path;
+        log.info(`  Capturing ${target.label} (desktop): ${targetUrl}`);
+        await navigateSafely(desktopPage, targetUrl);
+        await desktopPage.waitForTimeout(config.screenshots.waitAfterLoadMs);
+
+        // Verify we weren't redirected back to login
+        if (desktopPage.url().includes(strategy.loginPath)) {
+          log.warn(`  Redirected to login — session may have expired, skipping ${target.label}`);
+          continue;
+        }
+
+        const buf = await captureAndOptimize(desktopPage, config);
+        if (buf.length / 1024 < 5) {
+          log.warn(`  Skipping blank screenshot for ${target.label} (${(buf.length / 1024).toFixed(1)}KB)`);
+          continue;
+        }
+
+        const safeName = target.label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        screenshots.push({
+          buffer: buf,
+          filename: `${repoName}-${safeName}-desktop.webp`,
+          label: target.label,
+          viewport: 'desktop',
+          sizeKb: buf.length / 1024,
+        });
+        log.info(`  Captured ${target.label}: ${(buf.length / 1024).toFixed(1)}KB`);
+      } catch (e) {
+        log.warn(`  Failed to capture ${target.label}: ${(e as Error).message}`);
+      }
+    }
+
+    // Mobile screenshot — copy auth cookies from desktop context
+    try {
+      const mobileCtx = await browser.newContext({
+        viewport: config.screenshots.mobileViewport,
+        deviceScaleFactor: 2,
+      });
+      const cookies = await desktopCtx.cookies();
+      await mobileCtx.addCookies(cookies);
+
+      const mobilePage = await mobileCtx.newPage();
+      const firstPage = strategy.postLoginPages[0];
+      const mobileUrl = deployedUrl.replace(/\/$/, '') + firstPage.path;
+      log.info(`  Capturing ${firstPage.label} (mobile): ${mobileUrl}`);
+      await navigateSafely(mobilePage, mobileUrl);
+      await mobilePage.waitForTimeout(config.screenshots.waitAfterLoadMs);
+
+      const mobileBuf = await captureAndOptimize(mobilePage, config);
+      if (mobileBuf.length / 1024 >= 5) {
+        const safeName = firstPage.label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        screenshots.push({
+          buffer: mobileBuf,
+          filename: `${repoName}-${safeName}-mobile.webp`,
+          label: `${firstPage.label} (Mobile)`,
+          viewport: 'mobile',
+          sizeKb: mobileBuf.length / 1024,
+        });
+        log.info(`  Captured mobile: ${(mobileBuf.length / 1024).toFixed(1)}KB`);
+      }
+
+      await mobileCtx.close();
+    } catch (e) {
+      log.warn(`  Mobile screenshot failed: ${(e as Error).message}`);
+    }
+
+    await desktopCtx.close();
+  } finally {
+    await browser.close();
+  }
+
+  const durationSec = (Date.now() - startTime) / 1000;
+  log.info(`Auth capture: ${screenshots.length} screenshots in ${durationSec.toFixed(1)}s`);
+  return { screenshots, durationSec };
+}
+
+async function executeLogin(
+  page: Page,
+  deployedUrl: string,
+  strategy: AppAuthStrategy,
+  credentials: { email: string; password: string }
+): Promise<boolean> {
+  const loginUrl = deployedUrl.replace(/\/$/, '') + strategy.loginPath;
+  log.info(`  Logging in at ${loginUrl}...`);
+
+  const reached = await navigateSafely(page, loginUrl);
+  if (!reached) {
+    log.warn('  Login page not reachable');
+    return false;
+  }
+  await page.waitForTimeout(2000);
+
+  try {
+    // Fill email
+    await page.fill('input[type="email"]', credentials.email);
+    await page.waitForTimeout(500);
+
+    if (strategy.multiStep) {
+      // Click continue/next button
+      const continuePattern = new RegExp(strategy.continueButtonText ?? 'continue|next', 'i');
+      const continueBtn = page.locator('button').filter({ hasText: continuePattern }).first();
+      await continueBtn.click();
+      await page.waitForTimeout(3000);
+    }
+
+    // Fill password
+    const passwordField = page.locator('input[type="password"]');
+    await passwordField.waitFor({ state: 'visible', timeout: 10000 });
+    await passwordField.fill(credentials.password);
+
+    // Click sign-in button
+    const signInPattern = new RegExp(strategy.signInButtonText ?? 'sign in|log in|submit', 'i');
+    const signInBtn = page.locator('button').filter({ hasText: signInPattern }).first();
+    await signInBtn.click();
+
+    // Wait for redirect
+    const waitMs = strategy.waitAfterLoginMs ?? 5000;
+    await page.waitForTimeout(waitMs);
+
+    // Verify login succeeded — URL should no longer contain login path
+    if (page.url().includes(strategy.loginPath)) {
+      log.warn(`  Login failed — still on ${page.url()}`);
+      return false;
+    }
+
+    log.info(`  Login successful! URL: ${page.url()}`);
+    return true;
+  } catch (e) {
+    log.warn(`  Login error: ${(e as Error).message}`);
+    return false;
+  }
+}
+
+// ─── Public (Unauthenticated) Capture ───────────────────────────────────────
+
+async function capturePublicScreenshots(
+  deployedUrl: string,
+  repoName: string,
+  config: ReturnType<typeof getConfig>,
+  startTime: number
+): Promise<{ screenshots: ScreenshotResult[]; durationSec: number }> {
   let browser: Browser | null = null;
   const screenshots: ScreenshotResult[] = [];
 
@@ -142,10 +336,11 @@ export async function captureScreenshots(
       }
     }
 
-    // Mobile screenshot
+    // Mobile screenshot — use 2x DPR for crisp rendering (like a real phone)
     try {
       const mobilePage = await browser.newPage({
         viewport: config.screenshots.mobileViewport,
+        deviceScaleFactor: 2,
       });
       await navigateSafely(mobilePage, deployedUrl);
       await mobilePage.waitForTimeout(config.screenshots.waitAfterLoadMs);
@@ -175,7 +370,6 @@ export async function captureScreenshots(
 
   const durationSec = (Date.now() - startTime) / 1000;
   log.info(`Captured ${screenshots.length} screenshots in ${durationSec.toFixed(1)}s`);
-
   return { screenshots, durationSec };
 }
 

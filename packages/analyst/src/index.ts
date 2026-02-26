@@ -1,9 +1,10 @@
-import { createLogger, getConfig, calculateCost } from '@appspotlight/shared';
+import { createLogger, getConfig, calculateCost, getVercelDeploymentUrl } from '@appspotlight/shared';
 import type { AnalystOutput } from '@appspotlight/shared';
 import { cloneAndReadRepo, cleanupRepo } from './repo-reader.js';
 import { generateContent } from './content-generator.js';
 import { captureScreenshots } from './screenshot-capture.js';
 import { calculateConfidence } from './confidence.js';
+import { diagnoseDeployment, waitForRedeploy } from './deployment-doctor.js';
 
 const log = createLogger('analyst');
 
@@ -32,17 +33,47 @@ export async function analyzeRepo(options: AnalyzeOptions): Promise<AnalystOutpu
     const contentResult = await generateContent(repoFiles);
 
     // Determine deployed URL
-    const deployedUrl = options.deployedUrl
+    // Priority: explicit override > package.json homepage > Vercel API > static config map
+    let deployedUrl: string | null = options.deployedUrl
       ?? repoFiles.meta.homepageUrl
       ?? config.deployUrlMap[repoFiles.meta.repoName]
       ?? null;
 
+    // If no URL found yet, try Vercel API detection
+    if (!deployedUrl && config.vercel?.token) {
+      log.info('Checking Vercel for deployment URL...');
+      deployedUrl = await getVercelDeploymentUrl(repoFiles.meta.repoName, config);
+    }
+
     // Step 3: Capture screenshots
     log.info('Step 3/4: Capturing screenshots...');
-    const { screenshots, durationSec } = await captureScreenshots(
+    let { screenshots, durationSec } = await captureScreenshots(
       deployedUrl,
       repoFiles.meta.repoName
     );
+
+    // Step 3b: If URL was unreachable, try the Deployment Doctor
+    const allPlaceholders = screenshots.every(s => s.filename.includes('placeholder'));
+    if (deployedUrl && allPlaceholders) {
+      log.info('═══ Deployment Doctor: URL unreachable — diagnosing... ═══');
+      const diagnosis = await diagnoseDeployment(deployedUrl, repoFiles.clonePath, true);
+
+      if (diagnosis.fixApplied) {
+        log.info(`Fix applied: ${diagnosis.fixDescription} — waiting for redeploy...`);
+        const isBack = await waitForRedeploy(deployedUrl);
+
+        if (isBack) {
+          log.info('Site is back up — retrying screenshot capture');
+          const retry = await captureScreenshots(deployedUrl, repoFiles.meta.repoName);
+          screenshots = retry.screenshots;
+          durationSec += retry.durationSec;
+        } else {
+          log.warn('Site did not come back after fix — keeping placeholder screenshots');
+        }
+      } else {
+        log.info(`Deployment Doctor: ${diagnosis.diagnosis}`);
+      }
+    }
 
     // Step 4: Calculate confidence and cost
     log.info('Step 4/4: Calculating confidence and cost...');
@@ -71,9 +102,15 @@ export async function analyzeRepo(options: AnalyzeOptions): Promise<AnalystOutpu
       durationSec
     );
 
-    // If content doesn't have a valid CTA URL, try the deployed URL
-    if (contentResult.content.cta_url === '/contact' && deployedUrl) {
+    // Always set CTA URL to a known-good URL — never trust Claude's guess
+    // Priority: deployed URL (even if temporarily down) > GitHub repo URL
+    if (deployedUrl) {
       contentResult.content.cta_url = deployedUrl;
+      log.info(`  CTA URL set to deployed: ${deployedUrl}`);
+    } else {
+      // Fall back to GitHub repo URL — always exists
+      contentResult.content.cta_url = repoUrl.replace(/\.git$/, '');
+      log.info(`  CTA URL set to repo: ${contentResult.content.cta_url}`);
     }
 
     log.info(`✓ Analysis complete for "${contentResult.content.app_name}"`);
@@ -137,9 +174,8 @@ export async function regenerateContent(
       0 // no new screenshots
     );
 
-    if (contentResult.content.cta_url === '/contact' && previousOutput.repoMeta.homepageUrl) {
-      contentResult.content.cta_url = previousOutput.repoMeta.homepageUrl;
-    }
+    // Always set CTA to known-good URL — use previous CTA (already resolved)
+    contentResult.content.cta_url = previousOutput.content.cta_url;
 
     log.info(`✓ Retry complete for "${contentResult.content.app_name}"`);
     log.info(`  Confidence: ${confidence.totalScore}/100 (was ${previousOutput.confidence})`);
@@ -164,3 +200,5 @@ export { cloneAndReadRepo, cleanupRepo } from './repo-reader.js';
 export { generateContent } from './content-generator.js';
 export { captureScreenshots } from './screenshot-capture.js';
 export { calculateConfidence } from './confidence.js';
+export { diagnoseDeployment, waitForRedeploy } from './deployment-doctor.js';
+export type { DiagnosisResult } from './deployment-doctor.js';

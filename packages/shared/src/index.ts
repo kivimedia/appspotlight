@@ -17,16 +17,22 @@ export type {
   QACheckResult,
   QACheck,
   AppSpotlightConfig,
+  VisualQAResult,
+  VisualQAIssue,
+  AppAuthStrategy,
 } from './types.js';
 
 // Config
-export { getConfig, resetConfig } from './config.js';
+export { getConfig, resetConfig, getAppAuthCredentials } from './config.js';
 
 // Logger
 export { Logger, createLogger } from './logger.js';
 
 // Cost
 export { calculateCost, formatCostUsd, selectModel } from './cost.js';
+
+// Vercel
+export { getVercelDeploymentUrl } from './vercel.js';
 
 // Supabase
 export {

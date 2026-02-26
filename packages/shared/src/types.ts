@@ -97,6 +97,13 @@ export interface RunRecord {
   retry_cost_usd: number;
   retry_qa_failures: string[];
 
+  // Visual QA fields
+  visual_qa_passed: boolean | null;
+  visual_qa_issues: string[];
+  visual_qa_cost_usd: number;
+  visual_qa_retry_count: number;
+  visual_qa_retry_cost_usd: number;
+
   started_at: string;
   completed_at: string | null;
   error_message: string | null;
@@ -106,6 +113,27 @@ export interface HumanEdit {
   field: string;
   original_value: string;
   edited_value: string;
+}
+
+// ─── Visual QA ─────────────────────────────────────────────────────────────
+
+export interface VisualQAResult {
+  passed: boolean;
+  issues: VisualQAIssue[];
+  screenshotSizeKb: number;
+  costData: {
+    input_tokens: number;
+    output_tokens: number;
+    model: string;
+    cost_usd: number;
+  };
+  durationSec: number;
+}
+
+export interface VisualQAIssue {
+  severity: 'critical' | 'warning' | 'info';
+  category: 'layout' | 'content' | 'gallery' | 'readability' | 'spacing' | 'rendering';
+  description: string;
 }
 
 // ─── Feedback Loop ──────────────────────────────────────────────────────────
@@ -164,6 +192,17 @@ export interface QACheck {
   message: string;
 }
 
+// ─── App Auth (Screenshot Login) ────────────────────────────────────────────
+
+export interface AppAuthStrategy {
+  loginPath: string;
+  multiStep: boolean;
+  continueButtonText?: string;
+  signInButtonText?: string;
+  postLoginPages: { path: string; label: string }[];
+  waitAfterLoginMs?: number;
+}
+
 // ─── Config ─────────────────────────────────────────────────────────────────
 
 export interface AppSpotlightConfig {
@@ -214,5 +253,20 @@ export interface AppSpotlightConfig {
   watcher: {
     port: number;
   };
+  vercel?: {
+    token: string;
+    teamId?: string;
+  };
   deployUrlMap: Record<string, string>;
+  appAuth: Record<string, AppAuthStrategy>;
+  visualQA: {
+    enabled: boolean;
+    model: string;
+    maxTokens: number;
+    failOnCritical: boolean;
+    failThreshold: number;
+    retryEnabled: boolean;
+    maxRetries: number;
+    retryableCategories: string[];
+  };
 }

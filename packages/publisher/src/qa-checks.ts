@@ -1,5 +1,6 @@
 import { createLogger } from '@appspotlight/shared';
 import type { AppContent, ScreenshotResult, QACheckResult, QACheck } from '@appspotlight/shared';
+import sharp from 'sharp';
 
 const log = createLogger('qa');
 
@@ -26,6 +27,35 @@ export async function runQAChecks(
     message: content.features.length >= 2
       ? `${content.features.length} features found`
       : `Only ${content.features.length} features (need at least 2)`,
+  });
+
+  // 1b. Audience quality — flag overly generic audiences
+  const genericAudiences = ['developers', 'end users', 'users', 'everyone'];
+  const audienceLower = (content.target_audience ?? '').toLowerCase().trim();
+  const isGenericAudience = genericAudiences.some(g => audienceLower === g);
+  checks.push({
+    name: 'audience_specific',
+    passed: !isGenericAudience,
+    message: isGenericAudience
+      ? `target_audience is too generic: "${content.target_audience}" — should describe actual end users`
+      : `target_audience is specific: "${content.target_audience}"`,
+  });
+
+  // 1c. No em dashes — Claude loves them but they look AI-generated
+  const allText = [
+    content.tagline,
+    content.problem_statement,
+    content.target_audience,
+    content.cta_text,
+    ...content.features.map(f => `${f.title} ${f.description}`),
+  ].join(' ');
+  const emdashCount = (allText.match(/\u2014/g) || []).length;
+  checks.push({
+    name: 'no_emdashes',
+    passed: emdashCount === 0,
+    message: emdashCount === 0
+      ? 'No em dashes found'
+      : `Found ${emdashCount} em dash(es) — replace with regular dashes or rewrite`,
   });
 
   // 2. Word count thresholds
@@ -55,6 +85,12 @@ export async function runQAChecks(
         ? `${ss.filename} may be blank (${ss.sizeKb.toFixed(1)}KB)`
         : `${ss.filename} looks valid (${ss.sizeKb.toFixed(1)}KB)`,
     });
+  }
+
+  // 3b. Blur detection — flag low-resolution or blurry screenshots
+  for (const ss of realScreenshots) {
+    const blurCheck = await checkScreenshotSharpness(ss);
+    checks.push(blurCheck);
   }
 
   // 4. CTA URL validation
@@ -94,6 +130,53 @@ function checkWordCount(field: string, text: string, min: number, max: number): 
       ? `${field}: ${wordCount} words (OK)`
       : `${field}: ${wordCount} words (expected ${min}-${max})`,
   };
+}
+
+/**
+ * Detect blurry/low-quality screenshots using edge variance analysis.
+ * Converts to greyscale, applies a Laplacian-like edge convolution,
+ * then measures the standard deviation of the result. Low variance = blurry.
+ */
+async function checkScreenshotSharpness(ss: ScreenshotResult): Promise<QACheck> {
+  try {
+    const { width, height } = await sharp(ss.buffer).metadata() as { width: number; height: number };
+
+    // Minimum resolution check — desktop should be >= 1000px, mobile >= 600px
+    const minWidth = ss.viewport === 'mobile' ? 600 : 1000;
+    if (width < minWidth) {
+      return {
+        name: `screenshot_sharp_${ss.filename}`,
+        passed: false,
+        message: `${ss.filename} is too low-res (${width}px wide, need >= ${minWidth}px for ${ss.viewport})`,
+      };
+    }
+
+    // Edge detection: convert to greyscale, convolve with Laplacian kernel, measure stats
+    const edgeStats = await sharp(ss.buffer)
+      .greyscale()
+      .convolve({ width: 3, height: 3, kernel: [0, 1, 0, 1, -4, 1, 0, 1, 0] })
+      .stats();
+
+    // Standard deviation of the edge channel — higher = sharper
+    const edgeStdDev = edgeStats.channels[0].stdev;
+    const BLUR_THRESHOLD = 8; // Below this = likely blurry
+
+    const isSharp = edgeStdDev >= BLUR_THRESHOLD;
+    return {
+      name: `screenshot_sharp_${ss.filename}`,
+      passed: isSharp,
+      message: isSharp
+        ? `${ss.filename} is sharp (edge variance: ${edgeStdDev.toFixed(1)}, ${width}x${height})`
+        : `${ss.filename} appears blurry (edge variance: ${edgeStdDev.toFixed(1)} < ${BLUR_THRESHOLD}, ${width}x${height})`,
+    };
+  } catch (e) {
+    log.warn(`Blur check failed for ${ss.filename}: ${(e as Error).message}`);
+    return {
+      name: `screenshot_sharp_${ss.filename}`,
+      passed: true, // Don't fail build if blur check itself errors
+      message: `${ss.filename} blur check skipped: ${(e as Error).message}`,
+    };
+  }
 }
 
 async function checkCtaUrl(url: string): Promise<QACheck> {

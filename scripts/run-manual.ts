@@ -17,15 +17,15 @@
 import { randomUUID } from 'crypto';
 import {
   createLogger,
-  getConfig,
   createRunRecord,
   completeRunRecord,
   failRunRecord,
   checkBudget,
   updateRunRecord,
 } from '@appspotlight/shared';
+import type { VisualQAResult } from '@appspotlight/shared';
 import { analyzeRepo, regenerateContent } from '@appspotlight/analyst';
-import { publishApp } from '@appspotlight/publisher';
+import { publishApp, runVisualQAWithRetry } from '@appspotlight/publisher';
 
 const log = createLogger('manual');
 
@@ -197,6 +197,19 @@ async function main(): Promise<void> {
       }
     }
 
+    // ── Step 3: Visual QA (with retry) ──
+    log.info('');
+    log.info('Phase 3: VISUAL QA');
+    log.info('─────────────────────────────────────────');
+
+    const vqaResult = await runVisualQAWithRetry({
+      runId, repoUrl, analystOutput, publishResult,
+      publishApp, regenerateContent,
+    });
+    analystOutput = vqaResult.analystOutput;
+    publishResult = vqaResult.publishResult;
+    const visualQAResult: VisualQAResult | undefined = vqaResult.visualQAResult;
+
     // Log to Supabase
     await completeRunRecord(
       runId,
@@ -208,7 +221,12 @@ async function main(): Promise<void> {
       },
       analystOutput.confidence,
       publishResult.qaResult,
-      analystOutput.content
+      analystOutput.content,
+      visualQAResult ? {
+        passed: visualQAResult.passed,
+        issues: visualQAResult.issues.map(i => `[${i.severity}] [${i.category}] ${i.description}`),
+        cost_usd: visualQAResult.costData.cost_usd,
+      } : null
     );
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -222,6 +240,12 @@ async function main(): Promise<void> {
     log.info(`  QA:      ${publishResult.qaResult.passed ? 'PASSED' : 'FAILED'}`);
     if (publishResult.qaResult.failures.length > 0) {
       log.info(`  Issues:  ${publishResult.qaResult.failures.join(', ')}`);
+    }
+    if (visualQAResult) {
+      log.info(`  Visual:  ${visualQAResult.passed ? 'PASSED' : 'FAILED'} (${visualQAResult.issues.length} issues, $${visualQAResult.costData.cost_usd.toFixed(4)})`);
+      if (vqaResult.retryCount > 0) {
+        log.info(`  VQA Retries: ${vqaResult.retryCount}, Retry Cost: $${vqaResult.totalRetryCost.toFixed(4)}`);
+      }
     }
     log.info(`  Time:    ${elapsed}s`);
     log.info(`  Cost:    $${analystOutput.costData.total_cost_usd.toFixed(4)}`);

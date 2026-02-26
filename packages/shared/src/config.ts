@@ -77,7 +77,22 @@ export function getConfig(): AppSpotlightConfig {
     watcher: {
       port: envNum('WATCHER_PORT', defaults.watcher.port),
     },
+    vercel: {
+      token: envStr('VERCEL_TOKEN', defaults.vercel?.token ?? ''),
+      teamId: envStr('VERCEL_TEAM_ID', defaults.vercel?.teamId ?? '') || undefined,
+    },
     deployUrlMap: defaults.deployUrlMap,
+    appAuth: defaults.appAuth ?? {},
+    visualQA: {
+      enabled: process.env.VISUAL_QA_ENABLED !== 'false' && (defaults.visualQA?.enabled ?? true),
+      model: envStr('VISUAL_QA_MODEL', defaults.visualQA?.model ?? 'claude-sonnet-4-5-20250929'),
+      maxTokens: envNum('VISUAL_QA_MAX_TOKENS', defaults.visualQA?.maxTokens ?? 1500),
+      failOnCritical: defaults.visualQA?.failOnCritical ?? true,
+      failThreshold: envNum('VISUAL_QA_FAIL_THRESHOLD', defaults.visualQA?.failThreshold ?? 3),
+      retryEnabled: process.env.VISUAL_QA_RETRY_ENABLED !== 'false' && (defaults.visualQA?.retryEnabled ?? true),
+      maxRetries: Math.min(envNum('VISUAL_QA_MAX_RETRIES', defaults.visualQA?.maxRetries ?? 1), 3),
+      retryableCategories: defaults.visualQA?.retryableCategories ?? ['content', 'readability'],
+    },
   };
 
   return _config;
@@ -86,4 +101,13 @@ export function getConfig(): AppSpotlightConfig {
 /** Reset cached config (useful for testing) */
 export function resetConfig(): void {
   _config = null;
+}
+
+/** Resolve app auth credentials from env vars (APP_AUTH_{REPO}_EMAIL / _PASSWORD) */
+export function getAppAuthCredentials(repoName: string): { email: string; password: string } | null {
+  const key = repoName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+  const email = process.env[`APP_AUTH_${key}_EMAIL`];
+  const password = process.env[`APP_AUTH_${key}_PASSWORD`];
+  if (!email || !password) return null;
+  return { email, password };
 }

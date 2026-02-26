@@ -27,8 +27,9 @@ import {
   checkBudget,
   updateRunRecord,
 } from '@appspotlight/shared';
+import type { VisualQAResult } from '@appspotlight/shared';
 import { analyzeRepo, regenerateContent } from '@appspotlight/analyst';
-import { publishApp, findPageBySlug } from '@appspotlight/publisher';
+import { publishApp, findPageBySlug, runVisualQAWithRetry } from '@appspotlight/publisher';
 
 const log = createLogger('backfill');
 
@@ -280,6 +281,19 @@ async function main(): Promise<void> {
         }
       }
 
+      // Visual QA (with retry)
+      const vqaResult = await runVisualQAWithRetry({
+        runId,
+        repoUrl: repo.clone_url,
+        analystOutput,
+        publishResult,
+        publishApp,
+        regenerateContent,
+      });
+      analystOutput = vqaResult.analystOutput;
+      publishResult = vqaResult.publishResult;
+      const visualQAResult: VisualQAResult | undefined = vqaResult.visualQAResult;
+
       // Log completion
       await completeRunRecord(
         runId,
@@ -291,7 +305,12 @@ async function main(): Promise<void> {
         },
         analystOutput.confidence,
         publishResult.qaResult,
-        analystOutput.content
+        analystOutput.content,
+        visualQAResult ? {
+          passed: visualQAResult.passed,
+          issues: visualQAResult.issues.map(i => `[${i.severity}] [${i.category}] ${i.description}`),
+          cost_usd: visualQAResult.costData.cost_usd,
+        } : null
       );
 
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
