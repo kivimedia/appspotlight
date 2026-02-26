@@ -66,6 +66,17 @@
     "KaraokeMadness": "https://karaoke-madness.vercel.app"
   },
   "appAuth": {
+    "deploy-helper": {
+      "loginPath": "/login",
+      "multiStep": false,
+      "signInButtonText": "sign in with email|sign in|log in",
+      "postLoginPages": [
+        { "path": "/dashboard", "label": "Dashboard" },
+        { "path": "/vault", "label": "Credential Vault" },
+        { "path": "/deploy/new", "label": "New Deployment" }
+      ],
+      "waitAfterLoginMs": 3000
+    },
     "choirmind": {
       "loginPath": "/auth/signin",
       "multiStep": true,

@@ -12,9 +12,9 @@ Check for these categories of issues:
 
 1. **Layout/Spacing**: Large empty gaps between sections, sections collapsing, uneven spacing, content not centered properly
 2. **Content Visibility**: Missing section text, descriptions not rendering (only titles visible), audience text missing, benefit lines missing under audience personas
-3. **Gallery Quality**: Screenshot gallery images rendering too small, broken images, placeholder images visible
+3. **Gallery Quality**: Screenshot gallery images rendering too small, broken images, placeholder images visible. CRITICALLY: examine what the gallery screenshots actually SHOW. If any gallery image displays a login page, sign-up form, authentication screen, "Welcome" setup page, or generic landing/marketing page instead of actual app functionality (dashboards, features, data), flag it as "critical" under "gallery". The gallery must showcase the app in use, not its login gate.
 4. **Readability & Typography**: Text too small to read, poor contrast, tech badges barely readable. Fonts must match the site design: Poppins for headings, Open Sans for body text. Flag if text appears to use Arial, Times New Roman, or system default fonts instead. Emoji icons should be clearly visible and large enough to see at a glance.
-5. **Rendering Issues**: Login/auth pages captured instead of app content, error pages, broken styling
+5. **Rendering Issues**: Login/auth pages captured instead of app content (this includes gallery screenshots that show login forms, sign-up pages, or "Welcome/Get Started" onboarding screens — these are CRITICAL), error pages, broken styling
 6. **Stray Elements & Artifacts**: Any unexpected boxes, borders, cursors, input fields, empty rectangles, red/colored outlines, floating UI widgets, chat bubbles, or admin controls visible on the page. These are CRITICAL — they make the page look broken and unprofessional. Scan the ENTIRE page carefully, especially corners and edges.
 7. **Overall Quality**: Does this look like a professional portfolio page? Would you be proud to show this to a client?
 
@@ -118,7 +118,7 @@ async function reviewWithVision(
     `Hero: "${content.app_name}" with tagline "${content.tagline}"`,
     `Problem/Solution section`,
     `Features section with ${content.features.length} features: ${content.features.map(f => f.title).join(', ')}`,
-    ...(screenshotCount > 0 ? [`Screenshot gallery with ${screenshotCount} app screenshots`] : []),
+    ...(screenshotCount > 0 ? [`Screenshot gallery with ${screenshotCount} app screenshots — IMPORTANT: zoom into the gallery images and verify they show ACTUAL app screens (dashboards, features, data), NOT login pages, sign-up forms, or marketing landing pages. Auth/login screenshots in the gallery are a CRITICAL defect.`] : []),
     `Audience section: "${content.target_audience}"`,
     `Tech stack badges: ${content.tech_stack.join(', ')}`,
     `CTA section with button "${content.cta_text}"`,
