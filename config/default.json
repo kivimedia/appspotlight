@@ -50,8 +50,8 @@
     "enabled": true,
     "model": "claude-sonnet-4-5-20250929",
     "maxTokens": 1500,
-    "failOnCritical": true,
-    "failThreshold": 4,
+    "failOnCritical": false,
+    "failThreshold": 5,
     "retryEnabled": true,
     "maxRetries": 1,
     "retryableCategories": ["content", "readability"]

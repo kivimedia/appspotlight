@@ -181,37 +181,15 @@ Generate the JSON content now. If the app has a deployed URL, use it for cta_url
     content.features = [{ title: 'Core Feature', description: 'See repository for details.' }];
   }
   if (!content.target_audience || content.target_audience.toLowerCase() === 'developers') {
-    // Infer audience with benefit lines (pipe-separated format)
     const hint = `${content.app_name} ${content.tagline} ${content.problem_statement}`.toLowerCase();
-    if (hint.includes('choir') || hint.includes('sing') || hint.includes('vocal') || hint.includes('music')) {
-      content.target_audience = "Choir singers: Practice at your own pace with smart repetition | Choir conductors: Track every singer's progress in one dashboard | Music educators: Build custom playlists aligned to your curriculum";
-    } else if (hint.includes('cook') || hint.includes('recipe') || hint.includes('food')) {
-      content.target_audience = 'Home cooks: Discover and save recipes tailored to your taste | Food enthusiasts: Explore new cuisines with guided instructions | Recipe creators: Share your dishes with a growing community';
-    } else if (hint.includes('fitness') || hint.includes('workout') || hint.includes('health')) {
-      content.target_audience = 'Fitness enthusiasts: Track workouts and see real progress | Personal trainers: Manage client programs from one dashboard | Health-conscious individuals: Build sustainable habits with smart reminders';
-    } else {
-      content.target_audience = 'End users: Get things done faster with an intuitive interface | Teams: Collaborate seamlessly with shared workspaces | Organizations: Scale operations with built-in analytics';
-    }
+    content.target_audience = inferAudienceFromHint(hint);
     log.info(`  Inferred target audience: ${content.target_audience}`);
   }
-  // Ensure audience has benefit lines — if it's comma-separated without colons, reformat with benefits
+  // Ensure audience has benefit lines — if missing colons, replace with domain-specific personas
   if (content.target_audience && !content.target_audience.includes(':')) {
-    log.warn('  target_audience has no benefit lines (no colons found) — auto-reformatting with benefits');
-    // Parse the existing personas (comma, pipe, or newline separated)
-    const personas = content.target_audience
-      .split(/[|,\n]/)
-      .map(s => s.trim())
-      .filter(Boolean);
-    // Try to match known domain and add benefit lines
+    log.warn('  target_audience has no benefit lines (no colons found) — replacing with domain-specific personas');
     const hint = `${content.app_name} ${content.tagline} ${content.problem_statement}`.toLowerCase();
-    if (hint.includes('choir') || hint.includes('sing') || hint.includes('vocal') || hint.includes('music')) {
-      content.target_audience = "Choir singers: Practice at your own pace with smart repetition | Choir conductors: Track every singer's progress in one dashboard | Music educators: Build custom playlists aligned to your curriculum";
-    } else if (personas.length >= 2) {
-      // Generic fallback: append a generic benefit to each persona
-      content.target_audience = personas.map(p => `${p}: Enjoy a streamlined experience built for your needs`).join(' | ');
-    } else {
-      content.target_audience = 'End users: Get things done faster with an intuitive interface | Teams: Collaborate seamlessly with shared workspaces | Organizations: Scale operations with built-in analytics';
-    }
+    content.target_audience = inferAudienceFromHint(hint);
     log.info(`  Reformatted target audience: ${content.target_audience}`);
   }
   if (!content.benefits) {
@@ -255,6 +233,50 @@ Generate the JSON content now. If the app has a deployed URL, use it for cta_url
     outputTokens,
     modelUsed,
   };
+}
+
+// ─── Audience Inference ──────────────────────────────────────────────────────
+
+/** Word-boundary check: avoids "sing" matching "processing" */
+function hasWord(text: string, word: string): boolean {
+  return new RegExp(`\\b${word}\\b`).test(text);
+}
+
+/**
+ * Infer audience from app hint text (lowercase name + tagline + problem).
+ * Order matters — most specific categories first, broader ones later.
+ */
+function inferAudienceFromHint(hint: string): string {
+  // Most specific first: karaoke before generic music/song
+  if (hasWord(hint, 'karaoke')) {
+    return 'Karaoke enthusiasts: Find and sing your favorite songs with ease | Party hosts: Set up the perfect karaoke night in minutes | Music lovers: Discover new songs and share playlists with friends';
+  }
+  // Invoice/email/send — check before choir since "send" is specific
+  if (hasWord(hint, 'invoice') || hasWord(hint, 'email') || hasWord(hint, 'send') || hasWord(hint, 'contact') || hint.includes('amram')) {
+    return 'Business owners: Reach your audience with targeted messages | Marketing teams: Manage campaigns and track results in one place | Freelancers: Stay connected with clients through effortless communication';
+  }
+  // Deploy/devops
+  if (hasWord(hint, 'deploy') || hasWord(hint, 'devops') || hint.includes('ci/cd') || hasWord(hint, 'infrastructure')) {
+    return 'Solo developers: Ship to production without the deployment headache | Small teams: Keep everyone on the same page with shared checklists | Startup CTOs: Get visibility into every service and environment at a glance';
+  }
+  // Choir/vocal — use word boundaries for "sing" to avoid matching "processing"
+  if (hasWord(hint, 'choir') || hasWord(hint, 'sing') || hasWord(hint, 'singing') || hasWord(hint, 'vocal') || hasWord(hint, 'choral')) {
+    return "Choir singers: Practice at your own pace with smart repetition | Choir conductors: Track every singer's progress in one dashboard | Music educators: Build custom playlists aligned to your curriculum";
+  }
+  // Generic music/song (after karaoke and choir)
+  if (hasWord(hint, 'music') || hasWord(hint, 'song') || hasWord(hint, 'lyric')) {
+    return 'Music enthusiasts: Discover and enjoy music in a whole new way | Creators: Share your musical passion with a growing audience | Listeners: Find the perfect soundtrack for every moment';
+  }
+  // Cooking
+  if (hasWord(hint, 'cook') || hasWord(hint, 'recipe') || hasWord(hint, 'food')) {
+    return 'Home cooks: Discover and save recipes tailored to your taste | Food enthusiasts: Explore new cuisines with guided instructions | Recipe creators: Share your dishes with a growing community';
+  }
+  // Fitness
+  if (hasWord(hint, 'fitness') || hasWord(hint, 'workout') || hasWord(hint, 'health')) {
+    return 'Fitness enthusiasts: Track workouts and see real progress | Personal trainers: Manage client programs from one dashboard | Health-conscious individuals: Build sustainable habits with smart reminders';
+  }
+  // Generic fallback
+  return 'End users: Get things done faster with an intuitive interface | Teams: Collaborate seamlessly with shared workspaces | Organizations: Scale operations with built-in analytics';
 }
 
 // ─── Build Code Context ─────────────────────────────────────────────────────

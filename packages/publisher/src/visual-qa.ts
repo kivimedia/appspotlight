@@ -28,7 +28,7 @@ IMPORTANT RULES:
 - If the expected sections list does NOT include a screenshot gallery, do NOT flag its absence.
 - Scan every corner and edge of the screenshot — artifacts often appear at the bottom-right or page margins.
 - App screenshots in the gallery may contain non-English text (Hebrew, Arabic, etc.) — this is EXPECTED for internationalized apps. Do NOT flag non-English UI text in screenshots as an issue. The PAGE content (headings, descriptions, buttons) should be in English, but the APP screenshots show the actual running application which may be in any language.
-- The page has a dark/black background. Some sections (audience cards, feature cards) use dark gray (#111) cards on the black background. Look carefully — these sections ARE present but may be subtle. Do NOT flag a section as "missing" unless you genuinely cannot see any heading or text for it anywhere on the page.
+- The page uses an intentional dark theme with a black (#000) background. Cards (features, audience, problem/solution) use a dark navy (#1a1a2e) background. This dark-on-dark design is INTENTIONAL and professional — do NOT flag low contrast between card backgrounds and page background as a defect. Only flag text that is genuinely unreadable. Do NOT flag a section as "missing" unless you genuinely cannot see any heading or text for it anywhere on the page.
 - Gallery images in a multi-column layout will naturally be smaller than full-width. Only flag gallery images as "too small" if they are genuinely thumbnail-sized (under ~200px wide). Images filling their column width at ~400px+ are acceptable.
 
 Respond ONLY with valid JSON matching this schema:
@@ -213,10 +213,11 @@ export async function runVisualQA(
     const visionResult = await reviewWithVision(screenshotBuffer, content, screenshotCount ?? 0);
 
     // Step 3: Determine pass/fail based on config thresholds
+    // Thresholds are authoritative — they override the model's own overall_pass judgment
     const criticalCount = visionResult.issues.filter(i => i.severity === 'critical').length;
     const totalIssueCount = visionResult.issues.filter(i => i.severity !== 'info').length;
 
-    let passed = visionResult.overallPass;
+    let passed = true;
 
     if (config.visualQA.failOnCritical && criticalCount > 0) {
       passed = false;

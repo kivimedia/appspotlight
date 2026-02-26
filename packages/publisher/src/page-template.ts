@@ -325,10 +325,10 @@ function buildProblemSolutionSection(content: AppContent): string {
 <!-- wp:columns {"className":"appspotlight-problem-solution","style":{"spacing":{"padding":{"top":"3rem","bottom":"3rem","left":"2rem","right":"2rem"},"blockGap":{"left":"1.5rem"}}}} -->
 <div class="wp-block-columns appspotlight-problem-solution" style="padding-top:3rem;padding-right:2rem;padding-bottom:3rem;padding-left:2rem">
 
-<!-- wp:column {"className":"appspotlight-ps-card","style":{"color":{"background":"#111111"},"border":{"radius":"16px"},"spacing":{"padding":{"top":"2.5rem","right":"2.5rem","bottom":"2.5rem","left":"2.5rem"}}}} -->
-<div class="wp-block-column appspotlight-ps-card" style="background-color:#111;border-radius:16px;padding-top:2.5rem;padding-right:2.5rem;padding-bottom:2.5rem;padding-left:2.5rem">
+<!-- wp:column {"className":"appspotlight-ps-card","style":{"color":{"background":"#1a1a2e"},"border":{"radius":"16px"},"spacing":{"padding":{"top":"2.5rem","right":"2.5rem","bottom":"2.5rem","left":"2.5rem"}}}} -->
+<div class="wp-block-column appspotlight-ps-card" style="background-color:#1a1a2e;border-radius:16px;padding-top:2.5rem;padding-right:2.5rem;padding-bottom:2.5rem;padding-left:2.5rem">
 
-<!-- wp:paragraph {"style":{"typography":{"fontSize":"0.75rem","fontWeight":"700","textTransform":"uppercase","letterSpacing":"0.15em"},"color":{"text":"#cf2e2e"}}} -->
+<!-- wp:paragraph {"style":{"typography":{"fontSize":"0.85rem","fontWeight":"700","textTransform":"uppercase","letterSpacing":"0.15em"},"color":{"text":"#ff6b6b"}}} -->
 <p style="color:#ff6b6b;font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em">The Problem</p>
 <!-- /wp:paragraph -->
 
@@ -339,10 +339,10 @@ function buildProblemSolutionSection(content: AppContent): string {
 </div>
 <!-- /wp:column -->
 
-<!-- wp:column {"className":"appspotlight-ps-card","style":{"color":{"background":"#111111"},"border":{"radius":"16px"},"spacing":{"padding":{"top":"2.5rem","right":"2.5rem","bottom":"2.5rem","left":"2.5rem"}}}} -->
-<div class="wp-block-column appspotlight-ps-card" style="background-color:#111;border-radius:16px;padding-top:2.5rem;padding-right:2.5rem;padding-bottom:2.5rem;padding-left:2.5rem">
+<!-- wp:column {"className":"appspotlight-ps-card","style":{"color":{"background":"#1a1a2e"},"border":{"radius":"16px"},"spacing":{"padding":{"top":"2.5rem","right":"2.5rem","bottom":"2.5rem","left":"2.5rem"}}}} -->
+<div class="wp-block-column appspotlight-ps-card" style="background-color:#1a1a2e;border-radius:16px;padding-top:2.5rem;padding-right:2.5rem;padding-bottom:2.5rem;padding-left:2.5rem">
 
-<!-- wp:paragraph {"style":{"typography":{"fontSize":"0.75rem","fontWeight":"700","textTransform":"uppercase","letterSpacing":"0.15em"},"color":{"text":"#00d084"}}} -->
+<!-- wp:paragraph {"style":{"typography":{"fontSize":"0.85rem","fontWeight":"700","textTransform":"uppercase","letterSpacing":"0.15em"},"color":{"text":"#51cf66"}}} -->
 <p style="color:#51cf66;font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em">The Solution</p>
 <!-- /wp:paragraph -->
 
@@ -363,8 +363,8 @@ function buildProblemSolutionSection(content: AppContent): string {
 function buildFeaturesSection(content: AppContent): string {
   const featureBlocks = content.features.slice(0, 8).map((feature, i) => {
     const icon = feature.icon ?? FEATURE_ICONS[i % FEATURE_ICONS.length];
-    return `<!-- wp:column {"className":"appspotlight-feature-card","style":{"color":{"background":"#111111"},"border":{"radius":"16px"},"spacing":{"padding":{"top":"2rem","right":"2rem","bottom":"2rem","left":"2rem"}}}} -->
-<div class="wp-block-column appspotlight-feature-card" style="background-color:#111;border-radius:16px;padding-top:2rem;padding-right:2rem;padding-bottom:2rem;padding-left:2rem">
+    return `<!-- wp:column {"className":"appspotlight-feature-card","style":{"color":{"background":"#1a1a2e"},"border":{"radius":"16px"},"spacing":{"padding":{"top":"2rem","right":"2rem","bottom":"2rem","left":"2rem"}}}} -->
+<div class="wp-block-column appspotlight-feature-card" style="background-color:#1a1a2e;border-radius:16px;padding-top:2rem;padding-right:2rem;padding-bottom:2rem;padding-left:2rem">
 
 <!-- wp:paragraph {"style":{"typography":{"fontSize":"3.6rem"}}} -->
 <p style="font-size:3.6rem"><span class="appspotlight-icon">${icon}</span></p>
@@ -512,13 +512,13 @@ function buildAudienceSection(content: AppContent): string {
 
   const cards = audienceSegments.map((segment, i) => {
     const benefitBlock = segment.benefit
-      ? `\n<!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"0.9rem"},"color":{"text":"#8a94a8"},"spacing":{"margin":{"top":"0.5rem"}}}} -->
-<p class="has-text-align-center" style="color:#b0bec5;font-size:1rem;margin-top:0.5rem">${esc(segment.benefit)}</p>
+      ? `\n<!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"1.05rem"},"color":{"text":"#d1d5e8"},"spacing":{"margin":{"top":"0.5rem"}}}} -->
+<p class="has-text-align-center" style="color:#d1d5e8;font-size:1.05rem;margin-top:0.5rem">${esc(segment.benefit)}</p>
 <!-- /wp:paragraph -->`
       : '';
 
-    return `<!-- wp:column {"className":"appspotlight-audience-card","style":{"color":{"background":"#111111"},"border":{"radius":"16px"},"spacing":{"padding":{"top":"2rem","right":"2rem","bottom":"2rem","left":"2rem"}}}} -->
-<div class="wp-block-column appspotlight-audience-card" style="background-color:#111;border-radius:16px;padding-top:2rem;padding-right:2rem;padding-bottom:2rem;padding-left:2rem">
+    return `<!-- wp:column {"className":"appspotlight-audience-card","style":{"color":{"background":"#1a1a2e"},"border":{"radius":"16px"},"spacing":{"padding":{"top":"2rem","right":"2rem","bottom":"2rem","left":"2rem"}}}} -->
+<div class="wp-block-column appspotlight-audience-card" style="background-color:#1a1a2e;border-radius:16px;padding-top:2rem;padding-right:2rem;padding-bottom:2rem;padding-left:2rem">
 
 <!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"4.5rem"}}} -->
 <p class="has-text-align-center" style="font-size:4.5rem">${emojis[i % emojis.length]}</p>
