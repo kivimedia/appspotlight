@@ -725,10 +725,50 @@ interface AudienceSegment {
   benefit: string | null;
 }
 
+/**
+ * If persona is too long (>30 chars), split it into a short headline
+ * and move the rest into the benefit. Looks for natural break points
+ * like participles ("launching", "looking") or relative pronouns ("who", "that").
+ */
+function shortenPersona(segment: AudienceSegment): AudienceSegment {
+  if (segment.persona.length <= 30) return segment;
+
+  // Try to split at a natural break word
+  const breakPattern = /^(.+?)\s+(who|that|which|launching|looking|wanting|needing|tired|handing|building|using|working|trying|struggling|managing|seeking|running|dealing|creating|making|developing)\b\s*(.*)/i;
+  const match = segment.persona.match(breakPattern);
+  if (match) {
+    const shortPersona = capitalize(match[1].trim());
+    const extracted = capitalize((match[2] + ' ' + match[3]).trim());
+    const benefit = segment.benefit
+      ? extracted + '. ' + segment.benefit
+      : extracted || null;
+    return { persona: shortPersona, benefit };
+  }
+
+  // Fallback: truncate at ~30 chars on word boundary
+  const words = segment.persona.split(' ');
+  let short = '';
+  for (const w of words) {
+    if ((short + ' ' + w).trim().length > 30) break;
+    short = (short + ' ' + w).trim();
+  }
+  if (short && short !== segment.persona) {
+    const rest = capitalize(segment.persona.slice(short.length).trim());
+    const benefit = segment.benefit
+      ? rest + '. ' + segment.benefit
+      : rest || null;
+    return { persona: capitalize(short), benefit };
+  }
+
+  return segment;
+}
+
 function parseAudience(audienceStr: string): AudienceSegment[] {
+  let segments: AudienceSegment[] | null = null;
+
   // New format: "Persona: benefit | Persona: benefit"
   if (audienceStr.includes('|')) {
-    const segments = audienceStr.split('|')
+    const parsed = audienceStr.split('|')
       .map(s => s.trim())
       .filter(s => s.length > 2)
       .map(s => {
@@ -741,37 +781,44 @@ function parseAudience(audienceStr: string): AudienceSegment[] {
         }
         return { persona: capitalize(s), benefit: null };
       });
-    if (segments.length >= 2) return segments.slice(0, 3);
+    if (parsed.length >= 2) segments = parsed.slice(0, 3);
   }
 
   // Legacy format: "Persona: benefit, Persona: benefit" (comma-separated with colons)
-  const commaSegments = audienceStr
-    .split(/[,;]|\band\b/i)
-    .map(s => s.trim())
-    .filter(s => s.length > 2);
+  if (!segments) {
+    const commaSegments = audienceStr
+      .split(/[,;]|\band\b/i)
+      .map(s => s.trim())
+      .filter(s => s.length > 2);
 
-  if (commaSegments.length >= 2) {
-    return commaSegments.slice(0, 3).map(s => {
-      const colonIdx = s.indexOf(':');
-      if (colonIdx > 0) {
-        return {
-          persona: capitalize(s.slice(0, colonIdx).trim()),
-          benefit: s.slice(colonIdx + 1).trim() || null,
-        };
-      }
-      return { persona: capitalize(s), benefit: null };
-    });
+    if (commaSegments.length >= 2) {
+      segments = commaSegments.slice(0, 3).map(s => {
+        const colonIdx = s.indexOf(':');
+        if (colonIdx > 0) {
+          return {
+            persona: capitalize(s.slice(0, colonIdx).trim()),
+            benefit: s.slice(colonIdx + 1).trim() || null,
+          };
+        }
+        return { persona: capitalize(s), benefit: null };
+      });
+    }
   }
 
   // Fallback: split long string into sentence-like chunks
-  if (audienceStr.length > 60) {
+  if (!segments && audienceStr.length > 60) {
     const sentences = audienceStr.split(/[.!]\s+/)
       .map(s => capitalize(s.trim()))
       .filter(s => s.length > 5);
     if (sentences.length >= 2) {
-      return sentences.slice(0, 3).map(s => ({ persona: s, benefit: null }));
+      segments = sentences.slice(0, 3).map(s => ({ persona: s, benefit: null }));
     }
   }
 
-  return [{ persona: capitalize(audienceStr), benefit: null }];
+  if (!segments) {
+    segments = [{ persona: capitalize(audienceStr), benefit: null }];
+  }
+
+  // Post-process: shorten any overly long persona headlines
+  return segments.map(shortenPersona);
 }
