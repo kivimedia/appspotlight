@@ -222,7 +222,7 @@ function generatePortfolioContent(apps: AppCard[]): string {
 <section class="featured-section" id="kp-featured-section">
   <div class="kp-container">
     <div class="featured-label">Featured Project</div>
-    <a href="${escHtml(getPagePath(featured))}" class="featured-card animate-in delay-5" data-categories="${featured.categories.join(' ')}">
+    <a href="${escHtml(getPagePath(featured))}" class="featured-card" data-categories="${featured.categories.join(' ')}">
       <div class="featured-image">
         <span class="featured-new-badge">&#x2B50; Featured</span>
         ${featured.screenshot_url
@@ -247,7 +247,6 @@ function generatePortfolioContent(apps: AppCard[]): string {
 
   // ── Build project cards ──
   const projectCards = gridApps.map((app, i) => {
-    const delay = `delay-${Math.min(i + 1, 6)}`;
     const catBadges = app.categories.map(c => `<span class="cat-badge cat-${c}">${CATEGORY_META[c].label}</span>`).join('\n            ');
     const techPills = app.tech_stack.slice(0, 4).map(t => `<span class="tech-pill">${escHtml(t)}</span>`).join('\n            ');
     const hasScreenshot = app.screenshot_url && !app.screenshot_url.includes('branded-card');
@@ -264,7 +263,7 @@ function generatePortfolioContent(apps: AppCard[]): string {
         </div>`;
 
     return `
-      <a href="${escHtml(getPagePath(app))}" class="project-card animate-in ${delay}" data-categories="${app.categories.join(' ')}">
+      <a href="${escHtml(getPagePath(app))}" class="project-card" data-categories="${app.categories.join(' ')}">
         ${imageHtml}
         <div class="card-content">
           <div class="card-badges">
@@ -286,7 +285,8 @@ function generatePortfolioContent(apps: AppCard[]): string {
   }).join('\n');
 
   // ── Assemble full page ──
-  return `<style>
+  return `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
   /* === THEME OVERRIDES: full-width, no sidebar, no WP title, no white gaps === */
   .page-id-1905 .entry-title,
   .page-id-1905 .page-title,
@@ -344,7 +344,6 @@ function generatePortfolioContent(apps: AppCard[]): string {
   }
   .kivi-portfolio *, .kivi-portfolio *::before, .kivi-portfolio *::after { box-sizing: border-box; }
   .kivi-portfolio a { color: inherit; }
-  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
   .kivi-portfolio .bg-glow { position: absolute; width: 600px; height: 600px; border-radius: 50%; filter: blur(150px); opacity: 0.3; pointer-events: none; z-index: 0; }
   .kivi-portfolio .bg-glow-1 { top: -200px; right: -100px; background: var(--cat-agents); }
@@ -478,14 +477,6 @@ function generatePortfolioContent(apps: AppCard[]): string {
     .kivi-portfolio .featured-content h2 { font-size: 1.3rem; }
   }
 
-  @keyframes kp-fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-  .kivi-portfolio .animate-in { animation: kp-fadeUp 0.5s ease forwards; opacity: 0; }
-  .kivi-portfolio .delay-1 { animation-delay: 0.1s; }
-  .kivi-portfolio .delay-2 { animation-delay: 0.2s; }
-  .kivi-portfolio .delay-3 { animation-delay: 0.3s; }
-  .kivi-portfolio .delay-4 { animation-delay: 0.4s; }
-  .kivi-portfolio .delay-5 { animation-delay: 0.5s; }
-  .kivi-portfolio .delay-6 { animation-delay: 0.6s; }
 </style>
 
 <div class="kivi-portfolio">
@@ -495,21 +486,21 @@ function generatePortfolioContent(apps: AppCard[]): string {
 
 <section class="kp-hero">
   <div class="kp-container">
-    <div class="hero-badge animate-in">
+    <div class="hero-badge">
       <span class="dot"></span>
       ${apps.length} projects and counting
     </div>
-    <h1 class="animate-in delay-1">
+    <h1>
       Apps &amp; Projects<br>by <span class="gradient-text">Kivi Media</span>
     </h1>
-    <p class="animate-in delay-2">
+    <p>
       AI-powered apps, games, and business tools. Built with vibe coding, shipped fast, and designed to solve real problems.
     </p>
   </div>
 </section>
 
 <div class="kp-container">
-  <div class="stats-bar animate-in delay-3">
+  <div class="stats-bar">
     <div class="stat"><div class="stat-number">${apps.length}</div><div class="stat-label">Projects</div></div>
     <div class="stat"><div class="stat-number">${liveCount}</div><div class="stat-label">Live</div></div>
     <div class="stat"><div class="stat-number">${activeCats.length}</div><div class="stat-label">Categories</div></div>
@@ -519,7 +510,7 @@ function generatePortfolioContent(apps: AppCard[]): string {
 
 <section class="filter-section">
   <div class="kp-container">
-    <div class="filter-bar animate-in delay-4">
+    <div class="filter-bar">
       ${filterButtons}
     </div>
   </div>
