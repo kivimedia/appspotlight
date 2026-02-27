@@ -333,83 +333,85 @@ function generatePortfolioContent(apps: AppCard[]): string {
     --radius: 16px;
     --radius-sm: 8px;
     --radius-xs: 6px;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    font-family: 'Outfit', sans-serif;
-    line-height: 1.6;
-    position: relative;
+    background: #0a0a0f !important;
+    color: #f0f0f5 !important;
+    font-family: 'Outfit', sans-serif !important;
+    line-height: 1.6 !important;
+    position: relative !important;
     overflow: clip visible;
-    margin: 0 -20px 0 -20px;
-    padding: 0;
+    margin: 0 -20px 0 -20px !important;
+    padding: 0 !important;
   }
-  .kivi-portfolio *, .kivi-portfolio *::before, .kivi-portfolio *::after { box-sizing: border-box; }
-  .kivi-portfolio a { color: inherit; }
+  .kivi-portfolio *, .kivi-portfolio *::before, .kivi-portfolio *::after { box-sizing: border-box !important; }
+  .kivi-portfolio a { color: inherit !important; text-decoration: none !important; }
+  .kivi-portfolio h1, .kivi-portfolio h2, .kivi-portfolio h3, .kivi-portfolio h4 { color: #f0f0f5 !important; padding-bottom: 0 !important; margin: 0 !important; font-family: 'Outfit', sans-serif !important; }
+  .kivi-portfolio p { color: #9090a8 !important; margin: 0 !important; padding: 0 !important; }
 
-  .kivi-portfolio .bg-glow { position: absolute; width: 600px; height: 600px; border-radius: 50%; filter: blur(150px); opacity: 0.3; pointer-events: none; z-index: 0; }
-  .kivi-portfolio .bg-glow-1 { top: -200px; right: -100px; background: var(--cat-agents); }
-  .kivi-portfolio .bg-glow-2 { bottom: -300px; left: -200px; background: var(--cat-games); }
-  .kivi-portfolio .kp-container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+  .kivi-portfolio .bg-glow { position: absolute !important; width: 600px !important; height: 600px !important; border-radius: 50% !important; filter: blur(150px) !important; opacity: 0.3 !important; pointer-events: none !important; z-index: 0 !important; }
+  .kivi-portfolio .bg-glow-1 { top: -200px; right: -100px; background: var(--cat-agents) !important; }
+  .kivi-portfolio .bg-glow-2 { bottom: -300px; left: -200px; background: var(--cat-games) !important; }
+  .kivi-portfolio .kp-container { max-width: 1200px !important; margin: 0 auto !important; padding: 0 24px !important; position: relative !important; z-index: 1 !important; }
 
   /* HERO */
-  .kivi-portfolio .kp-hero { padding: 80px 0 40px; text-align: center; }
-  .kivi-portfolio .hero-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 100px; font-size: 0.8rem; color: #a78bfa; margin-bottom: 24px; font-weight: 500; letter-spacing: 0.02em; }
-  .kivi-portfolio .hero-badge .dot { width: 6px; height: 6px; background: #10B981; border-radius: 50%; animation: kp-pulse-dot 2s infinite; }
+  .kivi-portfolio .kp-hero { padding: 80px 0 40px !important; text-align: center !important; }
+  .kivi-portfolio .hero-badge { display: inline-flex !important; align-items: center !important; gap: 8px !important; padding: 6px 16px !important; background: rgba(99, 102, 241, 0.1) !important; border: 1px solid rgba(99, 102, 241, 0.2) !important; border-radius: 100px !important; font-size: 0.8rem !important; color: #a78bfa !important; margin-bottom: 24px !important; font-weight: 500 !important; letter-spacing: 0.02em !important; }
+  .kivi-portfolio .hero-badge .dot { width: 6px !important; height: 6px !important; background: #10B981 !important; border-radius: 50% !important; animation: kp-pulse-dot 2s infinite !important; }
   @keyframes kp-pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-  .kivi-portfolio .kp-hero h1 { font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 20px; color: var(--text-primary); }
-  .kivi-portfolio .gradient-text { background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-  .kivi-portfolio .kp-hero p { color: var(--text-secondary); font-size: 1.1rem; max-width: 600px; margin: 0 auto; line-height: 1.7; }
+  .kivi-portfolio .kp-hero h1 { font-size: clamp(2.2rem, 5vw, 3.5rem) !important; font-weight: 800 !important; letter-spacing: -0.03em !important; line-height: 1.1 !important; margin-bottom: 20px !important; color: #f0f0f5 !important; text-align: center !important; }
+  .kivi-portfolio .gradient-text { background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; background-clip: text !important; color: transparent !important; }
+  .kivi-portfolio .kp-hero p { color: #9090a8 !important; font-size: 1.1rem !important; max-width: 600px !important; margin: 0 auto !important; line-height: 1.7 !important; text-align: center !important; }
 
   /* STATS */
-  .kivi-portfolio .stats-bar { display: flex; justify-content: center; gap: 48px; padding: 32px 0; margin-bottom: 20px; }
-  .kivi-portfolio .stat { text-align: center; }
-  .kivi-portfolio .stat-number { font-size: 1.8rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-  .kivi-portfolio .stat-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+  .kivi-portfolio .stats-bar { display: flex !important; justify-content: center !important; gap: 48px !important; padding: 32px 0 !important; margin-bottom: 20px !important; flex-direction: row !important; }
+  .kivi-portfolio .stat { text-align: center !important; }
+  .kivi-portfolio .stat-number { font-size: 1.8rem !important; font-weight: 700 !important; font-family: 'JetBrains Mono', monospace !important; background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; background-clip: text !important; color: transparent !important; }
+  .kivi-portfolio .stat-label { font-size: 0.8rem !important; color: #606078 !important; text-transform: uppercase !important; letter-spacing: 0.08em !important; margin-top: 4px !important; }
 
   /* FILTER */
-  .kivi-portfolio .filter-section { padding: 0 0 40px; }
-  .kivi-portfolio .filter-bar { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-  .kivi-portfolio .filter-btn { padding: 8px 20px; border-radius: 100px; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: all 0.25s ease; }
-  .kivi-portfolio .filter-btn:hover { border-color: var(--border-hover); color: var(--text-primary); transform: translateY(-1px); }
-  .kivi-portfolio .filter-btn.active { color: #fff; border-color: transparent; }
-  .kivi-portfolio .filter-btn.active[data-filter="all"] { background: var(--bg-card); border-color: var(--border-hover); color: var(--text-primary); }
-  .kivi-portfolio .filter-btn.active[data-filter="agents"] { background: var(--cat-agents); box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3); }
-  .kivi-portfolio .filter-btn.active[data-filter="games"] { background: var(--cat-games); box-shadow: 0 4px 20px rgba(236, 72, 153, 0.3); }
-  .kivi-portfolio .filter-btn.active[data-filter="business"] { background: var(--cat-business); box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3); }
-  .kivi-portfolio .filter-btn.active[data-filter="music"] { background: var(--cat-music); box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3); }
-  .kivi-portfolio .filter-btn.active[data-filter="hosting"] { background: var(--cat-hosting); box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3); }
-  .kivi-portfolio .filter-btn.active[data-filter="devtools"] { background: var(--cat-devtools); box-shadow: 0 4px 20px rgba(249, 115, 22, 0.3); }
-  .kivi-portfolio .filter-count { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: rgba(255,255,255,0.15); font-size: 0.7rem; margin-left: 6px; font-family: 'JetBrains Mono', monospace; }
+  .kivi-portfolio .filter-section { padding: 0 0 40px !important; }
+  .kivi-portfolio .filter-bar { display: flex !important; justify-content: center !important; gap: 10px !important; flex-wrap: wrap !important; flex-direction: row !important; }
+  .kivi-portfolio .filter-btn { padding: 8px 20px !important; border-radius: 100px !important; border: 1px solid var(--border) !important; background: transparent !important; color: #9090a8 !important; font-family: 'Outfit', sans-serif !important; font-size: 0.85rem !important; font-weight: 500 !important; cursor: pointer !important; transition: all 0.25s ease !important; }
+  .kivi-portfolio .filter-btn:hover { border-color: var(--border-hover) !important; color: #f0f0f5 !important; transform: translateY(-1px); }
+  .kivi-portfolio .filter-btn.active { color: #fff !important; border-color: transparent !important; }
+  .kivi-portfolio .filter-btn.active[data-filter="all"] { background: var(--bg-card) !important; border-color: var(--border-hover) !important; color: #f0f0f5 !important; }
+  .kivi-portfolio .filter-btn.active[data-filter="agents"] { background: #6366F1 !important; box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3) !important; }
+  .kivi-portfolio .filter-btn.active[data-filter="games"] { background: #EC4899 !important; box-shadow: 0 4px 20px rgba(236, 72, 153, 0.3) !important; }
+  .kivi-portfolio .filter-btn.active[data-filter="business"] { background: #10B981 !important; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3) !important; }
+  .kivi-portfolio .filter-btn.active[data-filter="music"] { background: #F59E0B !important; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3) !important; }
+  .kivi-portfolio .filter-btn.active[data-filter="hosting"] { background: #3B82F6 !important; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3) !important; }
+  .kivi-portfolio .filter-btn.active[data-filter="devtools"] { background: #F97316 !important; box-shadow: 0 4px 20px rgba(249, 115, 22, 0.3) !important; }
+  .kivi-portfolio .filter-count { display: inline-flex !important; align-items: center !important; justify-content: center !important; min-width: 20px !important; height: 20px !important; padding: 0 6px !important; border-radius: 10px !important; background: rgba(255,255,255,0.15) !important; font-size: 0.7rem !important; margin-left: 6px !important; font-family: 'JetBrains Mono', monospace !important; }
 
   /* FEATURED */
-  .kivi-portfolio .featured-section { margin-bottom: 32px; }
-  .kivi-portfolio .featured-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-  .kivi-portfolio .featured-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-  .kivi-portfolio .featured-card { display: grid; grid-template-columns: 1.2fr 1fr; gap: 0; background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; transition: all 0.35s ease; cursor: pointer; text-decoration: none; color: inherit; position: relative; }
+  .kivi-portfolio .featured-section { margin-bottom: 32px !important; }
+  .kivi-portfolio .featured-label { font-size: 0.75rem !important; text-transform: uppercase !important; letter-spacing: 0.1em !important; color: #606078 !important; margin-bottom: 16px !important; display: flex !important; align-items: center !important; gap: 8px !important; }
+  .kivi-portfolio .featured-label::after { content: '' !important; flex: 1 !important; height: 1px !important; background: var(--border) !important; }
+  .kivi-portfolio .featured-card { display: grid !important; grid-template-columns: 1.2fr 1fr !important; gap: 0 !important; background: var(--bg-card) !important; border-radius: var(--radius) !important; border: 1px solid var(--border) !important; overflow: hidden !important; transition: all 0.35s ease; cursor: pointer !important; text-decoration: none !important; color: inherit !important; position: relative !important; }
   .kivi-portfolio .featured-card::before { content: ''; position: absolute; inset: 0; border-radius: var(--radius); background: var(--accent-gradient); opacity: 0; transition: opacity 0.35s; z-index: 0; padding: 1px; -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
   .kivi-portfolio .featured-card:hover::before { opacity: 1; }
   .kivi-portfolio .featured-card:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
   .kivi-portfolio .featured-card:hover .featured-image img { transform: scale(1.03); }
-  .kivi-portfolio .featured-image { position: relative; overflow: hidden; min-height: 280px; }
-  .kivi-portfolio .featured-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
-  .kivi-portfolio .featured-new-badge { position: absolute; top: 16px; left: 16px; padding: 4px 12px; background: var(--accent-gradient); border-radius: 100px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #fff; z-index: 2; }
-  .kivi-portfolio .featured-content { padding: 40px; display: flex; flex-direction: column; justify-content: center; position: relative; z-index: 1; }
-  .kivi-portfolio .featured-content h2 { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 12px; color: var(--text-primary); }
-  .kivi-portfolio .featured-content .tagline { color: var(--text-secondary); font-size: 1rem; margin-bottom: 20px; line-height: 1.6; }
-  .kivi-portfolio .featured-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
-  .kivi-portfolio .featured-cta { display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: var(--accent-gradient); border-radius: 100px; color: #fff; font-weight: 600; font-size: 0.9rem; text-decoration: none; transition: all 0.25s; align-self: flex-start; }
+  .kivi-portfolio .featured-image { position: relative !important; overflow: hidden !important; min-height: 280px !important; }
+  .kivi-portfolio .featured-image img { width: 100% !important; height: 100% !important; object-fit: cover !important; transition: transform 0.5s ease; }
+  .kivi-portfolio .featured-new-badge { position: absolute !important; top: 16px !important; left: 16px !important; padding: 4px 12px !important; background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899) !important; border-radius: 100px !important; font-size: 0.7rem !important; font-weight: 700 !important; letter-spacing: 0.06em !important; text-transform: uppercase !important; color: #fff !important; z-index: 2 !important; }
+  .kivi-portfolio .featured-content { padding: 40px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; position: relative !important; z-index: 1 !important; }
+  .kivi-portfolio .featured-content h2 { font-size: 1.8rem !important; font-weight: 700 !important; letter-spacing: -0.02em !important; margin-bottom: 12px !important; color: #f0f0f5 !important; }
+  .kivi-portfolio .featured-content .tagline { color: #9090a8 !important; font-size: 1rem !important; margin-bottom: 20px !important; line-height: 1.6 !important; }
+  .kivi-portfolio .featured-meta { display: flex !important; flex-wrap: wrap !important; gap: 8px !important; margin-bottom: 24px !important; }
+  .kivi-portfolio .featured-cta { display: inline-flex !important; align-items: center !important; gap: 8px !important; padding: 10px 24px !important; background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899) !important; border-radius: 100px !important; color: #fff !important; font-weight: 600 !important; font-size: 0.9rem !important; text-decoration: none !important; transition: all 0.25s; align-self: flex-start !important; }
   .kivi-portfolio .featured-cta:hover { transform: translateX(4px); box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4); }
 
   /* GRID */
-  .kivi-portfolio .grid-section { padding: 0 0 80px; }
-  .kivi-portfolio .grid-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-  .kivi-portfolio .grid-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-  .kivi-portfolio .projects-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .kivi-portfolio .grid-section { padding: 0 0 80px !important; }
+  .kivi-portfolio .grid-label { font-size: 0.75rem !important; text-transform: uppercase !important; letter-spacing: 0.1em !important; color: #606078 !important; margin-bottom: 16px !important; display: flex !important; align-items: center !important; gap: 8px !important; }
+  .kivi-portfolio .grid-label::after { content: '' !important; flex: 1 !important; height: 1px !important; background: var(--border) !important; }
+  .kivi-portfolio .projects-grid { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 20px !important; }
 
   /* PROJECT CARD */
-  .kivi-portfolio .project-card { background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; transition: all 0.3s ease; cursor: pointer; text-decoration: none; color: inherit; display: flex; flex-direction: column; position: relative; }
+  .kivi-portfolio .project-card { background: var(--bg-card) !important; border-radius: var(--radius) !important; border: 1px solid var(--border) !important; overflow: hidden !important; transition: all 0.3s ease; cursor: pointer !important; text-decoration: none !important; color: inherit !important; display: flex !important; flex-direction: column !important; position: relative !important; }
   .kivi-portfolio .project-card::before { content: ''; position: absolute; inset: 0; border-radius: var(--radius); opacity: 0; transition: opacity 0.3s; z-index: 0; padding: 1px; -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
   .kivi-portfolio .project-card:hover::before { opacity: 1; }
-  .kivi-portfolio .project-card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(0,0,0,0.3); border-color: transparent; }
+  .kivi-portfolio .project-card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(0,0,0,0.3); border-color: transparent !important; }
   .kivi-portfolio .project-card:hover .card-image img { transform: scale(1.05); }
   .kivi-portfolio .project-card[data-categories*="agents"]::before { background: var(--cat-agents); }
   .kivi-portfolio .project-card[data-categories*="games"]::before { background: var(--cat-games); }
@@ -418,63 +420,63 @@ function generatePortfolioContent(apps: AppCard[]): string {
   .kivi-portfolio .project-card[data-categories*="hosting"]::before { background: var(--cat-hosting); }
   .kivi-portfolio .project-card[data-categories*="devtools"]::before { background: var(--cat-devtools); }
 
-  .kivi-portfolio .card-image { position: relative; height: 200px; overflow: hidden; background: var(--bg-secondary); }
-  .kivi-portfolio .card-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
-  .kivi-portfolio .card-content { padding: 24px; flex: 1; display: flex; flex-direction: column; position: relative; z-index: 1; }
-  .kivi-portfolio .card-content h3 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 8px; color: var(--text-primary); }
-  .kivi-portfolio .card-content .tagline { color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 16px; line-height: 1.5; flex: 1; }
-  .kivi-portfolio .card-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
-  .kivi-portfolio .cat-badge { padding: 3px 10px; border-radius: 100px; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.02em; }
-  .kivi-portfolio .cat-agents { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; }
-  .kivi-portfolio .cat-games { background: rgba(236, 72, 153, 0.15); color: #f9a8d4; }
-  .kivi-portfolio .cat-business { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; }
-  .kivi-portfolio .cat-music { background: rgba(245, 158, 11, 0.15); color: #fcd34d; }
-  .kivi-portfolio .cat-hosting { background: rgba(59, 130, 246, 0.15); color: #93c5fd; }
-  .kivi-portfolio .cat-devtools { background: rgba(249, 115, 22, 0.15); color: #fdba74; }
-  .kivi-portfolio .tech-pills { display: flex; flex-wrap: wrap; gap: 6px; }
-  .kivi-portfolio .tech-pill { padding: 3px 8px; border-radius: var(--radius-xs); font-size: 0.68rem; font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.06); }
-  .kivi-portfolio .card-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1; }
-  .kivi-portfolio .card-stats { display: flex; gap: 16px; font-size: 0.75rem; color: var(--text-muted); }
-  .kivi-portfolio .card-stats span { display: flex; align-items: center; gap: 4px; }
-  .kivi-portfolio .card-arrow { color: var(--text-muted); transition: all 0.25s; }
-  .kivi-portfolio .project-card:hover .card-arrow { color: var(--text-primary); transform: translateX(4px); }
+  .kivi-portfolio .card-image { position: relative !important; height: 200px !important; overflow: hidden !important; background: var(--bg-secondary) !important; }
+  .kivi-portfolio .card-image img { width: 100% !important; height: 100% !important; object-fit: cover !important; transition: transform 0.4s ease; }
+  .kivi-portfolio .card-content { padding: 24px !important; flex: 1 !important; display: flex !important; flex-direction: column !important; position: relative !important; z-index: 1 !important; }
+  .kivi-portfolio .card-content h3 { font-size: 1.15rem !important; font-weight: 700 !important; letter-spacing: -0.01em !important; margin-bottom: 8px !important; color: #f0f0f5 !important; }
+  .kivi-portfolio .card-content .tagline { color: #9090a8 !important; font-size: 0.88rem !important; margin-bottom: 16px !important; line-height: 1.5 !important; flex: 1 !important; }
+  .kivi-portfolio .card-badges { display: flex !important; flex-wrap: wrap !important; gap: 6px !important; margin-bottom: 14px !important; }
+  .kivi-portfolio .cat-badge { padding: 3px 10px !important; border-radius: 100px !important; font-size: 0.7rem !important; font-weight: 500 !important; letter-spacing: 0.02em !important; }
+  .kivi-portfolio .cat-agents { background: rgba(99, 102, 241, 0.15) !important; color: #a5b4fc !important; }
+  .kivi-portfolio .cat-games { background: rgba(236, 72, 153, 0.15) !important; color: #f9a8d4 !important; }
+  .kivi-portfolio .cat-business { background: rgba(16, 185, 129, 0.15) !important; color: #6ee7b7 !important; }
+  .kivi-portfolio .cat-music { background: rgba(245, 158, 11, 0.15) !important; color: #fcd34d !important; }
+  .kivi-portfolio .cat-hosting { background: rgba(59, 130, 246, 0.15) !important; color: #93c5fd !important; }
+  .kivi-portfolio .cat-devtools { background: rgba(249, 115, 22, 0.15) !important; color: #fdba74 !important; }
+  .kivi-portfolio .tech-pills { display: flex !important; flex-wrap: wrap !important; gap: 6px !important; }
+  .kivi-portfolio .tech-pill { padding: 3px 8px !important; border-radius: 6px !important; font-size: 0.68rem !important; font-family: 'JetBrains Mono', monospace !important; background: rgba(255,255,255,0.05) !important; color: #606078 !important; border: 1px solid rgba(255,255,255,0.06) !important; }
+  .kivi-portfolio .card-footer { padding: 16px 24px !important; border-top: 1px solid var(--border) !important; display: flex !important; justify-content: space-between !important; align-items: center !important; position: relative !important; z-index: 1 !important; }
+  .kivi-portfolio .card-stats { display: flex !important; gap: 16px !important; font-size: 0.75rem !important; color: #606078 !important; }
+  .kivi-portfolio .card-stats span { display: flex !important; align-items: center !important; gap: 4px !important; }
+  .kivi-portfolio .card-arrow { color: #606078 !important; transition: all 0.25s; }
+  .kivi-portfolio .project-card:hover .card-arrow { color: #f0f0f5 !important; transform: translateX(4px); }
 
-  .kivi-portfolio .card-image-placeholder { height: 200px; background: linear-gradient(135deg, var(--bg-secondary), var(--bg-card)); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+  .kivi-portfolio .card-image-placeholder { height: 200px !important; background: linear-gradient(135deg, #12121a, #16161f) !important; display: flex !important; align-items: center !important; justify-content: center !important; position: relative !important; overflow: hidden !important; }
   .kivi-portfolio .card-image-placeholder::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(255,255,255,0.02) 10px, rgba(255,255,255,0.02) 20px); }
-  .kivi-portfolio .project-card.hidden { display: none; }
-  .kivi-portfolio .featured-card.hidden { display: none; }
-  .kivi-portfolio .featured-section.kp-hidden { display: none; }
+  .kivi-portfolio .project-card.hidden { display: none !important; }
+  .kivi-portfolio .featured-card.hidden { display: none !important; }
+  .kivi-portfolio .featured-section.kp-hidden { display: none !important; }
 
   /* CTA */
-  .kivi-portfolio .cta-section { padding: 60px 0 80px; text-align: center; }
-  .kivi-portfolio .cta-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 60px 40px; position: relative; overflow: hidden; }
-  .kivi-portfolio .cta-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--accent-gradient); }
-  .kivi-portfolio .cta-box h2 { font-size: 1.6rem; font-weight: 700; margin-bottom: 12px; color: var(--text-primary); }
-  .kivi-portfolio .cta-box p { color: var(--text-secondary); margin-bottom: 28px; font-size: 1rem; }
-  .kivi-portfolio .cta-links { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
-  .kivi-portfolio .cta-link { padding: 12px 28px; border-radius: 100px; font-weight: 600; font-size: 0.9rem; text-decoration: none; transition: all 0.25s; font-family: 'Outfit', sans-serif; }
-  .kivi-portfolio .cta-link-primary { background: var(--accent-gradient); color: #fff; }
+  .kivi-portfolio .cta-section { padding: 60px 0 80px !important; text-align: center !important; }
+  .kivi-portfolio .cta-box { background: var(--bg-card) !important; border: 1px solid var(--border) !important; border-radius: var(--radius) !important; padding: 60px 40px !important; position: relative !important; overflow: hidden !important; }
+  .kivi-portfolio .cta-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899); }
+  .kivi-portfolio .cta-box h2 { font-size: 1.6rem !important; font-weight: 700 !important; margin-bottom: 12px !important; color: #f0f0f5 !important; }
+  .kivi-portfolio .cta-box p { color: #9090a8 !important; margin-bottom: 28px !important; font-size: 1rem !important; }
+  .kivi-portfolio .cta-links { display: flex !important; justify-content: center !important; gap: 16px !important; flex-wrap: wrap !important; }
+  .kivi-portfolio .cta-link { padding: 12px 28px !important; border-radius: 100px !important; font-weight: 600 !important; font-size: 0.9rem !important; text-decoration: none !important; transition: all 0.25s; font-family: 'Outfit', sans-serif !important; }
+  .kivi-portfolio .cta-link-primary { background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899) !important; color: #fff !important; }
   .kivi-portfolio .cta-link-primary:hover { box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4); transform: translateY(-2px); }
-  .kivi-portfolio .cta-link-secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
-  .kivi-portfolio .cta-link-secondary:hover { border-color: var(--border-hover); color: var(--text-primary); transform: translateY(-2px); }
+  .kivi-portfolio .cta-link-secondary { background: transparent !important; color: #9090a8 !important; border: 1px solid var(--border) !important; }
+  .kivi-portfolio .cta-link-secondary:hover { border-color: var(--border-hover) !important; color: #f0f0f5 !important; transform: translateY(-2px); }
 
-  .kivi-portfolio .kp-footer { border-top: 1px solid var(--border); padding: 32px 0; text-align: center; color: var(--text-muted); font-size: 0.8rem; }
-  .kivi-portfolio .kp-footer a { color: var(--text-secondary); text-decoration: none; }
-  .kivi-portfolio .kp-footer a:hover { color: var(--text-primary); }
+  .kivi-portfolio .kp-footer { border-top: 1px solid var(--border) !important; padding: 32px 0 !important; text-align: center !important; color: #606078 !important; font-size: 0.8rem !important; }
+  .kivi-portfolio .kp-footer a { color: #9090a8 !important; text-decoration: none !important; }
+  .kivi-portfolio .kp-footer a:hover { color: #f0f0f5 !important; }
 
   @media (max-width: 900px) {
-    .kivi-portfolio .projects-grid { grid-template-columns: repeat(2, 1fr); }
-    .kivi-portfolio .featured-card { grid-template-columns: 1fr; }
-    .kivi-portfolio .featured-image { min-height: 220px; }
-    .kivi-portfolio .featured-content { padding: 28px; }
-    .kivi-portfolio .stats-bar { gap: 32px; }
+    .kivi-portfolio .projects-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .kivi-portfolio .featured-card { grid-template-columns: 1fr !important; }
+    .kivi-portfolio .featured-image { min-height: 220px !important; }
+    .kivi-portfolio .featured-content { padding: 28px !important; }
+    .kivi-portfolio .stats-bar { gap: 32px !important; }
   }
   @media (max-width: 600px) {
-    .kivi-portfolio .projects-grid { grid-template-columns: 1fr; }
-    .kivi-portfolio .stats-bar { gap: 20px; }
-    .kivi-portfolio .stat-number { font-size: 1.4rem; }
-    .kivi-portfolio .kp-hero h1 { font-size: 1.8rem; }
-    .kivi-portfolio .featured-content h2 { font-size: 1.3rem; }
+    .kivi-portfolio .projects-grid { grid-template-columns: 1fr !important; }
+    .kivi-portfolio .stats-bar { gap: 20px !important; }
+    .kivi-portfolio .stat-number { font-size: 1.4rem !important; }
+    .kivi-portfolio .kp-hero h1 { font-size: 1.8rem !important; }
+    .kivi-portfolio .featured-content h2 { font-size: 1.3rem !important; }
   }
 
 </style>
