@@ -1,5 +1,7 @@
 // Types
 export type {
+  ProjectType,
+  AppOverrides,
   AppContent,
   AppFeature,
   ScreenshotResult,
@@ -23,7 +25,7 @@ export type {
 } from './types.js';
 
 // Config
-export { getConfig, resetConfig, getAppAuthCredentials } from './config.js';
+export { getConfig, resetConfig, getAppAuthCredentials, getProjectType, getAppOverrides, isNonWebProject } from './config.js';
 
 // Logger
 export { Logger, createLogger } from './logger.js';

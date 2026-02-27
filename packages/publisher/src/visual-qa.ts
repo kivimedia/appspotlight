@@ -13,7 +13,7 @@ Check for these categories of issues:
 1. **Layout/Spacing**: Large empty gaps between sections, sections collapsing, uneven spacing, content not centered properly
 2. **Content Visibility**: Missing section text, descriptions not rendering (only titles visible), audience text missing, benefit lines missing under audience personas
 3. **Gallery Quality**: Screenshot gallery images rendering too small, broken images, placeholder images visible. CRITICALLY: examine what the gallery screenshots actually SHOW. If any gallery image displays a login page, sign-up form, authentication screen, "Welcome" setup page, or generic landing/marketing page instead of actual app functionality (dashboards, features, data), flag it as "critical" under "gallery". The gallery must showcase the app in use, not its login gate.
-4. **Readability & Typography**: Text too small to read, poor contrast, tech badges barely readable. Fonts must match the site design: Poppins for headings, Open Sans for body text. Flag if text appears to use Arial, Times New Roman, or system default fonts instead. Emoji icons should be clearly visible and large enough to see at a glance.
+4. **Readability & Typography**: Text too small to read, poor contrast, tech badges barely readable. Fonts must match the site design: Poppins for headings, Open Sans for body text. Flag if text appears to use Arial, Times New Roman, or system default fonts instead. Emoji icons should be clearly visible (~2.5-3.5rem, roughly 40-55px) — flag as "warning" if icons are tiny (under 20px) OR oversized (over 80px / taking up more than a third of the card height).
 5. **Rendering Issues**: Login/auth pages captured instead of app content (this includes gallery screenshots that show login forms, sign-up pages, or "Welcome/Get Started" onboarding screens — these are CRITICAL), error pages, broken styling
 6. **Stray Elements & Artifacts**: Any unexpected boxes, borders, cursors, input fields, empty rectangles, red/colored outlines, floating UI widgets, chat bubbles, or admin controls visible on the page. These are CRITICAL — they make the page look broken and unprofessional. Scan the ENTIRE page carefully, especially corners and edges.
 7. **Overall Quality**: Does this look like a professional portfolio page? Would you be proud to show this to a client?
@@ -123,7 +123,7 @@ async function reviewWithVision(
     `Tech stack badges: ${content.tech_stack.join(', ')}`,
     `CTA section with button "${content.cta_text}"`,
     `Typography: Headings must use Poppins font, body text must use Open Sans. No Arial, no system fonts, no serif/monospace. Body text should be 16px+ and readable.`,
-    `Emoji icons should be large and clearly visible (not tiny or hard to see)`,
+    `Emoji icons should be proportional to their cards (~40-55px). Flag if tiny (under 20px) or oversized (over 80px, dominating the card). Gallery images must have visible spacing between rows — no images touching.`,
     `NO stray elements anywhere on the page: no empty boxes, red borders, cursors, input fields, floating widgets, or admin controls. Scan all corners and edges carefully.`,
   ];
 

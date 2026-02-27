@@ -1,3 +1,23 @@
+// ─── Project Types ──────────────────────────────────────────────────────────
+
+export type ProjectType =
+  | 'web-app'           // Default: deployed web applications
+  | 'cli-tool'          // Command-line tools, no UI
+  | 'automation'        // Pipelines, scrapers, automation scripts
+  | 'desktop-app'       // Electron/native desktop apps
+  | 'vscode-extension'  // VS Code extensions
+  | 'library';          // npm packages, SDKs
+
+export interface AppOverrides {
+  maxScreenshots?: number;
+  projectType?: ProjectType;
+  displayName?: string;       // Override Claude's app_name inference
+  ctaLabel?: string;          // Override CTA text (e.g., "Install Extension")
+  ctaUrl?: string;            // Override CTA URL (e.g., VS Code marketplace link)
+  techStack?: string[];       // Supplement or override detected tech stack
+  tagline?: string;           // Override if Claude produces a bad tagline
+}
+
 // ─── Pipeline Data Types ────────────────────────────────────────────────────
 
 export interface AppContent {
@@ -33,15 +53,17 @@ export interface AnalystOutput {
   confidenceBreakdown: ConfidenceBreakdown;
   costData: CostData;
   repoMeta: RepoMeta;
+  projectType: ProjectType;
 }
 
 export interface ConfidenceBreakdown {
-  readmePresent: boolean;       // +20
-  deployedUrlReachable: boolean; // +25
-  featuresIdentified: boolean;   // +20 (3+ features)
+  readmePresent: boolean;       // +20 (web) / +25 (non-web)
+  deployedUrlReachable: boolean; // +25 (web only)
+  featuresIdentified: boolean;   // +20
   clearAudience: boolean;        // +15
-  screenshotsCaptured: boolean;  // +20
+  screenshotsCaptured: boolean;  // +20 (web) / branded card (non-web)
   totalScore: number;
+  projectType: ProjectType;
 }
 
 export interface RepoMeta {
@@ -258,6 +280,7 @@ export interface AppSpotlightConfig {
     teamId?: string;
   };
   deployUrlMap: Record<string, string>;
+  appOverrides: Record<string, AppOverrides>;
   appAuth: Record<string, AppAuthStrategy>;
   visualQA: {
     enabled: boolean;

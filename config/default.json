@@ -2,7 +2,7 @@
   "github": {
     "webhookSecret": "",
     "token": "",
-    "excludedRepos": [],
+    "excludedRepos": ["harmony-hub", "my-choir"],
     "allowedBranches": ["main", "master"]
   },
   "claude": {
@@ -11,7 +11,7 @@
     "opusModel": "claude-opus-4-6",
     "opusThreshold": 5000,
     "maxInputTokens": 4000,
-    "maxOutputTokens": 2000
+    "maxOutputTokens": 4096
   },
   "wordpress": {
     "baseUrl": "https://zivraviv.com",
@@ -39,7 +39,7 @@
   },
   "budget": {
     "maxCostPerRun": 3.00,
-    "maxWeeklyBudget": 25.00,
+    "maxWeeklyBudget": 75.00,
     "maxMonthlyBudget": 75.00,
     "alertAtPercent": 80
   },
@@ -63,7 +63,19 @@
   "deployUrlMap": {
     "boards": "https://boards-one.vercel.app",
     "choirmind": "https://choirmind.vercel.app",
-    "KaraokeMadness": "https://karaoke-madness.vercel.app"
+    "KaraokeMadness": "https://karaoke-madness.vercel.app",
+    "Inventory-Plus": "https://stock-buddy-pro-10.lovable.app"
+  },
+  "appOverrides": {
+    "KaraokeMadness": { "maxScreenshots": 10 },
+    "appspotlight": { "projectType": "automation", "displayName": "AppSpotlight", "ctaLabel": "View on GitHub" },
+    "seo-machine-stagesplus": { "projectType": "automation", "displayName": "SEO Machine", "ctaLabel": "View on GitHub" },
+    "Inventory-Plus": { "projectType": "web-app", "displayName": "Inventory Plus" },
+    "deployhelper-desktop-scanner": { "projectType": "desktop-app", "displayName": "DeployHelper Desktop Scanner", "ctaLabel": "View on GitHub" },
+    "deployhelper-scanner": { "projectType": "cli-tool", "displayName": "DeployHelper Scanner", "ctaLabel": "View on GitHub" },
+    "rename-my-window": { "projectType": "vscode-extension", "displayName": "Rename My Window", "ctaLabel": "Install Extension", "ctaUrl": "https://marketplace.visualstudio.com/items?itemName=NamethisWindow.rename-my-window" },
+    "carolinaHQ": { "projectType": "web-app", "displayName": "CarolinaHQ" },
+    "export-hats": { "projectType": "automation", "displayName": "Export Hats", "ctaLabel": "View on GitHub" }
   },
   "appAuth": {
     "deploy-helper": {

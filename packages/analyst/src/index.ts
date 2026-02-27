@@ -1,5 +1,5 @@
-import { createLogger, getConfig, calculateCost, getVercelDeploymentUrl } from '@appspotlight/shared';
-import type { AnalystOutput } from '@appspotlight/shared';
+import { createLogger, getConfig, calculateCost, getVercelDeploymentUrl, getProjectType, getAppOverrides } from '@appspotlight/shared';
+import type { AnalystOutput, ProjectType } from '@appspotlight/shared';
 import { cloneAndReadRepo, cleanupRepo } from './repo-reader.js';
 import { generateContent } from './content-generator.js';
 import { captureScreenshots } from './screenshot-capture.js';
@@ -27,10 +27,15 @@ export async function analyzeRepo(options: AnalyzeOptions): Promise<AnalystOutpu
   log.info('Step 1/4: Cloning and reading repo...');
   const repoFiles = await cloneAndReadRepo(repoUrl);
 
+  // Resolve project type from config
+  const projectType = getProjectType(repoFiles.meta.repoName);
+  const overrides = getAppOverrides(repoFiles.meta.repoName);
+  log.info(`Project type: ${projectType}`);
+
   try {
     // Step 2: Generate content via Claude
     log.info('Step 2/4: Generating content via Claude...');
-    const contentResult = await generateContent(repoFiles);
+    const contentResult = await generateContent(repoFiles, undefined, projectType);
 
     // Determine deployed URL
     // Priority: explicit override > package.json homepage > Vercel API > static config map
@@ -49,7 +54,12 @@ export async function analyzeRepo(options: AnalyzeOptions): Promise<AnalystOutpu
     log.info('Step 3/4: Capturing screenshots...');
     let { screenshots, durationSec } = await captureScreenshots(
       deployedUrl,
-      repoFiles.meta.repoName
+      repoFiles.meta.repoName,
+      {
+        projectType,
+        description: repoFiles.meta.description,
+        techStack: overrides.techStack ?? repoFiles.meta.languages,
+      }
     );
 
     // Step 3b: If URL was unreachable, try the Deployment Doctor
@@ -92,7 +102,8 @@ export async function analyzeRepo(options: AnalyzeOptions): Promise<AnalystOutpu
       features.length,
       audience.length > 10,
       screenshots,
-      deployedUrlReachable
+      deployedUrlReachable,
+      projectType
     );
 
     const costData = calculateCost(
@@ -103,14 +114,23 @@ export async function analyzeRepo(options: AnalyzeOptions): Promise<AnalystOutpu
     );
 
     // Always set CTA URL to a known-good URL — never trust Claude's guess
-    // Priority: deployed URL (even if temporarily down) > GitHub repo URL
-    if (deployedUrl) {
+    // Priority: config override > deployed URL > GitHub repo URL
+    if (overrides.ctaUrl) {
+      contentResult.content.cta_url = overrides.ctaUrl;
+      log.info(`  CTA URL set from config: ${overrides.ctaUrl}`);
+    } else if (deployedUrl) {
       contentResult.content.cta_url = deployedUrl;
       log.info(`  CTA URL set to deployed: ${deployedUrl}`);
     } else {
       // Fall back to GitHub repo URL — always exists
       contentResult.content.cta_url = repoUrl.replace(/\.git$/, '');
       log.info(`  CTA URL set to repo: ${contentResult.content.cta_url}`);
+    }
+
+    // Apply CTA label override from config
+    if (overrides.ctaLabel) {
+      contentResult.content.cta_text = overrides.ctaLabel;
+      log.info(`  CTA text set from config: ${overrides.ctaLabel}`);
     }
 
     log.info(`✓ Analysis complete for "${contentResult.content.app_name}"`);
@@ -127,6 +147,7 @@ export async function analyzeRepo(options: AnalyzeOptions): Promise<AnalystOutpu
       confidenceBreakdown: confidence,
       costData,
       repoMeta: repoFiles.meta,
+      projectType,
     };
   } finally {
     // Always clean up cloned repo
@@ -147,12 +168,13 @@ export async function regenerateContent(
   log.info(`QA failures to fix: ${qaFailures.join('; ')}`);
 
   const repoFiles = await cloneAndReadRepo(repoUrl);
+  const projectType = previousOutput.projectType ?? getProjectType(previousOutput.repoMeta.repoName);
 
   try {
     const contentResult = await generateContent(repoFiles, {
       previousContent: previousOutput.content,
       qaFailures,
-    });
+    }, projectType);
 
     const features = contentResult.content.features ?? [];
     const audience = contentResult.content.target_audience ?? '';
@@ -164,7 +186,8 @@ export async function regenerateContent(
       features.length,
       audience.length > 10,
       previousOutput.screenshots,
-      previousOutput.confidenceBreakdown.deployedUrlReachable
+      previousOutput.confidenceBreakdown.deployedUrlReachable,
+      projectType
     );
 
     const costData = calculateCost(
@@ -189,6 +212,7 @@ export async function regenerateContent(
       confidenceBreakdown: confidence,
       costData,
       repoMeta: previousOutput.repoMeta,
+      projectType,
     };
   } finally {
     cleanupRepo(repoFiles.clonePath);

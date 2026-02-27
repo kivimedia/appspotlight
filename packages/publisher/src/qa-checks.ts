@@ -1,5 +1,5 @@
-import { createLogger } from '@appspotlight/shared';
-import type { AppContent, ScreenshotResult, QACheckResult, QACheck } from '@appspotlight/shared';
+import { createLogger, isNonWebProject } from '@appspotlight/shared';
+import type { AppContent, ScreenshotResult, QACheckResult, QACheck, ProjectType } from '@appspotlight/shared';
 import sharp from 'sharp';
 
 const log = createLogger('qa');
@@ -10,7 +10,8 @@ const log = createLogger('qa');
  */
 export async function runQAChecks(
   content: AppContent,
-  screenshots: ScreenshotResult[]
+  screenshots: ScreenshotResult[],
+  projectType: ProjectType = 'web-app'
 ): Promise<QACheckResult> {
   const checks: QACheck[] = [];
 
@@ -75,18 +76,33 @@ export async function runQAChecks(
     checks.push(checkWordCount(`feature "${feature.title}"`, feature.description, 5, 60));
   }
 
-  // 3. Screenshot validation
-  const realScreenshots = screenshots.filter(s => !s.filename.includes('placeholder'));
-  checks.push({
-    name: 'screenshots_count',
-    passed: realScreenshots.length >= 2,
-    message: realScreenshots.length >= 2
-      ? `${realScreenshots.length} real screenshots captured`
-      : `Only ${realScreenshots.length} screenshots (need at least 2)`,
-  });
+  // 3. Screenshot validation — type-aware
+  if (isNonWebProject(projectType)) {
+    // Non-web: 1+ branded card is sufficient
+    const hasScreenshots = screenshots.length >= 1 && screenshots.some(s => s.sizeKb > 5);
+    checks.push({
+      name: 'screenshots_count',
+      passed: hasScreenshots,
+      message: hasScreenshots
+        ? `${screenshots.length} branded card(s) generated`
+        : 'No branded cards generated for non-web project',
+    });
+  } else {
+    // Web app: original 2+ real screenshots requirement
+    const realScreenshots = screenshots.filter(s => !s.filename.includes('placeholder'));
+    checks.push({
+      name: 'screenshots_count',
+      passed: realScreenshots.length >= 2,
+      message: realScreenshots.length >= 2
+        ? `${realScreenshots.length} real screenshots captured`
+        : `Only ${realScreenshots.length} screenshots (need at least 2)`,
+    });
+  }
 
   // Check screenshots are not blank (basic pixel variance check via file size)
-  for (const ss of realScreenshots) {
+  // Skip branded cards (they're generated, not captured)
+  const screenshotsToCheckBlank = screenshots.filter(s => !s.filename.includes('branded-card'));
+  for (const ss of screenshotsToCheckBlank) {
     const isLikelyBlank = ss.sizeKb < 5; // A blank WebP would be very small
     checks.push({
       name: `screenshot_not_blank_${ss.filename}`,
@@ -97,8 +113,11 @@ export async function runQAChecks(
     });
   }
 
-  // 3b. Blur detection — flag low-resolution or blurry screenshots
-  for (const ss of realScreenshots) {
+  // 3b. Blur detection — flag low-resolution or blurry screenshots (skip branded cards)
+  const screenshotsToCheckBlur = screenshots.filter(
+    s => !s.filename.includes('placeholder') && !s.filename.includes('branded-card')
+  );
+  for (const ss of screenshotsToCheckBlur) {
     const blurCheck = await checkScreenshotSharpness(ss);
     checks.push(blurCheck);
   }

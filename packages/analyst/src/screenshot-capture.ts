@@ -1,7 +1,8 @@
 import { chromium, type Browser, type Page } from 'playwright';
 import sharp from 'sharp';
-import { createLogger, getConfig, getAppAuthCredentials } from '@appspotlight/shared';
-import type { ScreenshotResult, AppAuthStrategy } from '@appspotlight/shared';
+import { createLogger, getConfig, getAppAuthCredentials, getAppOverrides, isNonWebProject } from '@appspotlight/shared';
+import type { ScreenshotResult, AppAuthStrategy, ProjectType } from '@appspotlight/shared';
+import { generateBrandedPlaceholder } from './branded-placeholder.js';
 
 const log = createLogger('screenshots');
 
@@ -16,20 +17,49 @@ const SCREEN_LABELS = [
 
 export async function captureScreenshots(
   deployedUrl: string | null,
-  repoName: string
+  repoName: string,
+  options?: {
+    projectType?: ProjectType;
+    description?: string | null;
+    techStack?: string[];
+  }
 ): Promise<{ screenshots: ScreenshotResult[]; durationSec: number }> {
   const config = getConfig();
   const startTime = Date.now();
+  const projectType = options?.projectType ?? 'web-app';
 
-  if (!deployedUrl) {
-    log.warn('No deployed URL — generating placeholder screenshots');
-    return {
-      screenshots: [createPlaceholder(repoName, 'Coming Soon')],
-      durationSec: 0,
-    };
+  // For non-web projects, always generate branded placeholders (skip Playwright entirely)
+  if (isNonWebProject(projectType)) {
+    log.info(`Non-web project (${projectType}) — generating branded card`);
+    const overrides = getAppOverrides(repoName);
+    const screenshots = await generateBrandedPlaceholder(
+      overrides.displayName ?? repoName,
+      repoName,
+      projectType,
+      options?.description,
+      options?.techStack ?? overrides.techStack
+    );
+    return { screenshots, durationSec: 0 };
   }
 
-  log.info(`Capturing screenshots from ${deployedUrl}`);
+  // Web app without a deployed URL — use branded placeholder instead of basic SVG
+  if (!deployedUrl) {
+    log.warn('No deployed URL — generating branded card');
+    const overrides = getAppOverrides(repoName);
+    const screenshots = await generateBrandedPlaceholder(
+      overrides.displayName ?? repoName,
+      repoName,
+      projectType,
+      options?.description,
+      options?.techStack ?? overrides.techStack
+    );
+    return { screenshots, durationSec: 0 };
+  }
+
+  // Apply per-app overrides (e.g., maxScreenshots)
+  const overrides = config.appOverrides?.[repoName] ?? {};
+  const effectiveMaxScreenshots = overrides.maxScreenshots ?? config.screenshots.maxScreenshots;
+  log.info(`Capturing screenshots from ${deployedUrl} (max: ${effectiveMaxScreenshots})`);
 
   // Check if this app has an auth strategy for post-login screenshots
   const authStrategy = config.appAuth?.[repoName];
@@ -39,7 +69,7 @@ export async function captureScreenshots(
     log.info(`Auth strategy found for "${repoName}" — attempting authenticated capture`);
     try {
       const authResult = await captureAuthenticatedScreenshots(
-        deployedUrl, repoName, authStrategy, credentials, config, startTime
+        deployedUrl, repoName, authStrategy, credentials, config, startTime, effectiveMaxScreenshots
       );
       if (authResult.screenshots.length > 0) {
         return authResult;
@@ -51,7 +81,7 @@ export async function captureScreenshots(
   }
 
   // Public (unauthenticated) capture — existing flow
-  return capturePublicScreenshots(deployedUrl, repoName, config, startTime);
+  return capturePublicScreenshots(deployedUrl, repoName, config, startTime, effectiveMaxScreenshots);
 }
 
 // ─── Authenticated Capture ──────────────────────────────────────────────────
@@ -62,7 +92,8 @@ async function captureAuthenticatedScreenshots(
   strategy: AppAuthStrategy,
   credentials: { email: string; password: string },
   config: ReturnType<typeof getConfig>,
-  startTime: number
+  startTime: number,
+  maxScreenshots: number
 ): Promise<{ screenshots: ScreenshotResult[]; durationSec: number }> {
   const screenshots: ScreenshotResult[] = [];
   const browser = await chromium.launch({ headless: true });
@@ -83,7 +114,7 @@ async function captureAuthenticatedScreenshots(
 
     // Capture each post-login page (desktop)
     for (const target of strategy.postLoginPages) {
-      if (screenshots.length >= config.screenshots.maxScreenshots - 1) break; // reserve 1 for mobile
+      if (screenshots.length >= maxScreenshots - 1) break; // reserve 1 for mobile
       try {
         const targetUrl = deployedUrl.replace(/\/$/, '') + target.path;
         log.info(`  Capturing ${target.label} (desktop): ${targetUrl}`);
@@ -223,7 +254,8 @@ async function capturePublicScreenshots(
   deployedUrl: string,
   repoName: string,
   config: ReturnType<typeof getConfig>,
-  startTime: number
+  startTime: number,
+  maxScreenshots: number
 ): Promise<{ screenshots: ScreenshotResult[]; durationSec: number }> {
   let browser: Browser | null = null;
   const screenshots: ScreenshotResult[] = [];
@@ -260,46 +292,38 @@ async function capturePublicScreenshots(
       sizeKb: homeBuffer.length / 1024,
     });
 
-    // Try scrolling down the home page for "below the fold" content
+    // Scroll through the page and capture at evenly-spaced positions
     const pageHeight = await desktopPage.evaluate(() => document.body.scrollHeight);
     const viewportHeight = config.screenshots.desktopViewport.height;
+    const scrollableHeight = pageHeight - viewportHeight;
 
-    if (pageHeight > viewportHeight * 1.5) {
-      // Scroll to middle of page and capture
-      try {
-        await desktopPage.evaluate((vh) => window.scrollTo(0, vh), viewportHeight);
-        await desktopPage.waitForTimeout(1000);
-        const midBuf = await captureAndOptimize(desktopPage, config);
-        if (midBuf.length / 1024 >= 5) {
-          screenshots.push({
-            buffer: midBuf,
-            filename: `${repoName}-scroll-mid-desktop.webp`,
-            label: 'Features / Content',
-            viewport: 'desktop',
-            sizeKb: midBuf.length / 1024,
-          });
-        }
-      } catch (e) {
-        log.warn(`Scroll-mid screenshot failed: ${(e as Error).message}`);
-      }
+    if (scrollableHeight > viewportHeight * 0.5) {
+      // Reserve 2 slots: 1 for internal links, 1 for mobile
+      const scrollBudget = Math.max(1, maxScreenshots - screenshots.length - 2);
+      const scrollSteps = Math.min(scrollBudget, Math.floor(scrollableHeight / viewportHeight));
+      const scrollLabels = ['Features / Content', 'Details', 'More Content', 'Gallery', 'Footer / CTA'];
 
-      // Scroll to bottom and capture
-      if (pageHeight > viewportHeight * 2.5) {
+      for (let step = 1; step <= scrollSteps; step++) {
+        const scrollY = step === scrollSteps
+          ? scrollableHeight // last step = bottom
+          : Math.round((scrollableHeight * step) / (scrollSteps + 1));
+
         try {
-          await desktopPage.evaluate(() => window.scrollTo(0, document.body.scrollHeight - window.innerHeight));
+          await desktopPage.evaluate((y) => window.scrollTo(0, y), scrollY);
           await desktopPage.waitForTimeout(1000);
-          const bottomBuf = await captureAndOptimize(desktopPage, config);
-          if (bottomBuf.length / 1024 >= 5) {
+          const buf = await captureAndOptimize(desktopPage, config);
+          if (buf.length / 1024 >= 5) {
+            const label = scrollLabels[step - 1] ?? `Section ${step}`;
             screenshots.push({
-              buffer: bottomBuf,
-              filename: `${repoName}-scroll-bottom-desktop.webp`,
-              label: 'Footer / CTA',
+              buffer: buf,
+              filename: `${repoName}-scroll-${step}-desktop.webp`,
+              label,
               viewport: 'desktop',
-              sizeKb: bottomBuf.length / 1024,
+              sizeKb: buf.length / 1024,
             });
           }
         } catch (e) {
-          log.warn(`Scroll-bottom screenshot failed: ${(e as Error).message}`);
+          log.warn(`Scroll step ${step} screenshot failed: ${(e as Error).message}`);
         }
       }
 
@@ -308,11 +332,11 @@ async function capturePublicScreenshots(
     }
 
     // Try internal links only if we still need more screenshots
-    if (screenshots.length < config.screenshots.maxScreenshots) {
+    if (screenshots.length < maxScreenshots) {
       const links = await findInternalLinks(desktopPage, deployedUrl);
 
-      for (let i = 0; i < Math.min(links.length, 2); i++) {
-        if (screenshots.length >= config.screenshots.maxScreenshots) break;
+      for (let i = 0; i < Math.min(links.length, maxScreenshots - screenshots.length); i++) {
+        if (screenshots.length >= maxScreenshots) break;
         try {
           await navigateSafely(desktopPage, links[i]);
           await desktopPage.waitForTimeout(config.screenshots.waitAfterLoadMs);

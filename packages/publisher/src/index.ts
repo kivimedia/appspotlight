@@ -18,13 +18,13 @@ export interface PublishResult {
  */
 export async function publishApp(analystOutput: AnalystOutput): Promise<PublishResult> {
   const config = getConfig();
-  const { content, screenshots, confidence, repoMeta } = analystOutput;
+  const { content, screenshots, confidence, repoMeta, projectType } = analystOutput;
 
   log.info(`═══ Publishing: ${content.app_name} ═══`);
 
   // Step 1: Run QA checks
   log.info('Step 1/4: Running QA checks...');
-  const qaResult = await runQAChecks(content, screenshots);
+  const qaResult = await runQAChecks(content, screenshots, projectType);
 
   // Determine publish status
   let pageStatus: 'publish' | 'draft' = 'publish';
@@ -46,7 +46,7 @@ export async function publishApp(analystOutput: AnalystOutput): Promise<PublishR
   // Step 3: Generate page markup
   log.info('Step 3/4: Generating page markup...');
   const slug = repoMeta.repoName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-  const markup = generatePageMarkup(content, mediaResults, repoMeta.repoName, confidence, repoMeta.repoUrl);
+  const markup = generatePageMarkup(content, mediaResults, repoMeta.repoName, confidence, repoMeta.repoUrl, projectType);
 
   // Step 4: Create or update page
   log.info('Step 4/4: Creating/updating WordPress page...');

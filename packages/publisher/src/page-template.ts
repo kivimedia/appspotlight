@@ -1,4 +1,5 @@
-import type { AppContent, WPMediaResult } from '@appspotlight/shared';
+import type { AppContent, WPMediaResult, ProjectType } from '@appspotlight/shared';
+import { isNonWebProject } from '@appspotlight/shared';
 
 /**
  * Generates Gutenberg block markup for AppSpotlight portfolio pages.
@@ -24,7 +25,8 @@ export function generatePageMarkup(
   mediaResults: WPMediaResult[],
   repoName: string,
   confidence: number,
-  repoUrl?: string
+  repoUrl?: string,
+  projectType?: ProjectType
 ): string {
   const blocks: string[] = [];
 
@@ -42,7 +44,10 @@ export function generatePageMarkup(
 
   // 4. Screenshot Gallery
   if (mediaResults.length > 0) {
-    blocks.push(buildGallerySection(mediaResults));
+    const galleryHeading = projectType && isNonWebProject(projectType)
+      ? 'Project Overview'
+      : 'See It In Action';
+    blocks.push(buildGallerySection(mediaResults, galleryHeading));
   }
 
   // 5. The Tech Stack
@@ -136,14 +141,10 @@ function buildGlobalStyles(): string {
   .entry-content p[style*="text-transform:uppercase"] {
     font-size: inherit !important;
   }
-  /* Emoji icon paragraphs — respect their inline font-size */
-  .entry-content p:has(.appspotlight-icon) {
-    font-size: inherit !important;
-  }
-  /* Audience + feature emoji paragraphs (3.6rem / 4.5rem) */
-  .entry-content p[style*="font-size:4.5rem"],
-  .entry-content p[style*="font-size:3.6rem"] {
-    font-size: inherit !important;
+  /* Emoji icon spans — render at their inline font-size, not the p's min-18px */
+  .appspotlight-icon {
+    font-size: inherit;
+    line-height: 1;
   }
   /* Problem/Solution card hover */
   .appspotlight-ps-card {
@@ -186,6 +187,14 @@ function buildGlobalStyles(): string {
   .appspotlight-audience-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 24px rgba(0, 120, 255, 0.12);
+  }
+  /* Kill any theme-injected gaps between sections — prevents white lines between dark blocks */
+  .entry-content > .wp-block-group > .wp-block-group {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  .entry-content > .wp-block-group {
+    gap: 0 !important;
   }
   /* Gallery — force Gutenberg columns/images to render in Divi */
   .appspotlight-gallery .wp-block-columns {
@@ -366,8 +375,8 @@ function buildFeaturesSection(content: AppContent): string {
     return `<!-- wp:column {"className":"appspotlight-feature-card","style":{"color":{"background":"#1a1a2e"},"border":{"radius":"16px"},"spacing":{"padding":{"top":"2rem","right":"2rem","bottom":"2rem","left":"2rem"}}}} -->
 <div class="wp-block-column appspotlight-feature-card" style="background-color:#1a1a2e;border-radius:16px;padding-top:2rem;padding-right:2rem;padding-bottom:2rem;padding-left:2rem">
 
-<!-- wp:paragraph {"style":{"typography":{"fontSize":"3.6rem"}}} -->
-<p style="font-size:3.6rem"><span class="appspotlight-icon">${icon}</span></p>
+<!-- wp:paragraph {"style":{"typography":{"fontSize":"4.5rem"}}} -->
+<p style="font-size:2.7rem"><span class="appspotlight-icon" style="font-size:2.7rem;line-height:1">${icon}</span></p>
 <!-- /wp:paragraph -->
 
 <!-- wp:heading {"level":3,"style":{"typography":{"fontSize":"1.1rem","fontWeight":"700"},"color":{"text":"#ffffff"}}} -->
@@ -415,7 +424,11 @@ ${rows.join('\n\n')}
 <!-- /wp:group -->`;
 }
 
-function buildGallerySection(mediaResults: WPMediaResult[]): string {
+const GALLERY_ROW_SPACER = `<!-- wp:spacer {"height":"1.5rem"} -->
+<div style="height:1.5rem" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->`;
+
+function buildGallerySection(mediaResults: WPMediaResult[], heading: string = 'See It In Action'): string {
   const maxCols = Math.min(mediaResults.length, 3);
   const rows: string[] = [];
 
@@ -448,14 +461,14 @@ ${cols}
 <div class="wp-block-group appspotlight-gallery" style="background-color:#000;margin-top:0;margin-bottom:0;padding-top:4rem;padding-right:2rem;padding-bottom:2rem;padding-left:2rem">
 
 <!-- wp:heading {"textAlign":"center","style":{"typography":{"fontSize":"2.2rem","fontWeight":"800"},"color":{"text":"#ffffff"}}} -->
-<h2 class="wp-block-heading has-text-align-center" style="color:#fff;font-size:2.2rem;font-weight:800">See It In Action</h2>
+<h2 class="wp-block-heading has-text-align-center" style="color:#fff;font-size:2.2rem;font-weight:800">${esc(heading)}</h2>
 <!-- /wp:heading -->
 
 <!-- wp:spacer {"height":"1rem"} -->
 <div style="height:1rem" aria-hidden="true" class="wp-block-spacer"></div>
 <!-- /wp:spacer -->
 
-${rows.join('\n\n')}
+${rows.join(`\n\n${GALLERY_ROW_SPACER}\n\n`)}
 
 </div>
 <!-- /wp:group -->`;
@@ -520,8 +533,8 @@ function buildAudienceSection(content: AppContent): string {
     return `<!-- wp:column {"className":"appspotlight-audience-card","style":{"color":{"background":"#1a1a2e"},"border":{"radius":"16px"},"spacing":{"padding":{"top":"2rem","right":"2rem","bottom":"2rem","left":"2rem"}}}} -->
 <div class="wp-block-column appspotlight-audience-card" style="background-color:#1a1a2e;border-radius:16px;padding-top:2rem;padding-right:2rem;padding-bottom:2rem;padding-left:2rem">
 
-<!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"4.5rem"}}} -->
-<p class="has-text-align-center" style="font-size:4.5rem">${emojis[i % emojis.length]}</p>
+<!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"5.5rem"}}} -->
+<p class="has-text-align-center" style="font-size:3.3rem"><span class="appspotlight-icon" style="font-size:3.3rem;line-height:1">${emojis[i % emojis.length]}</span></p>
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph {"align":"center","style":{"typography":{"fontWeight":"600"},"color":{"text":"#ffffff"}}} -->
@@ -562,8 +575,8 @@ function buildCtaSection(content: AppContent, repoUrl?: string): string {
     : '';
 
   // Use wp:group (NOT wp:cover) for Divi compatibility
-  return `<!-- wp:group {"className":"appspotlight-cta-section","style":{"spacing":{"padding":{"top":"5rem","bottom":"5rem","left":"2rem","right":"2rem"},"margin":{"top":"0","bottom":"0"}},"color":{"background":"#000000"}}} -->
-<div class="wp-block-group appspotlight-cta-section" style="background-color:#000;margin-top:0;margin-bottom:0;padding-top:5rem;padding-right:2rem;padding-bottom:5rem;padding-left:2rem">
+  return `<!-- wp:group {"className":"appspotlight-cta-section","style":{"spacing":{"padding":{"top":"2rem","bottom":"5rem","left":"2rem","right":"2rem"},"margin":{"top":"0","bottom":"0"}},"color":{"background":"#000000"}}} -->
+<div class="wp-block-group appspotlight-cta-section" style="background-color:#000;margin-top:0;margin-bottom:0;padding-top:2rem;padding-right:2rem;padding-bottom:5rem;padding-left:2rem">
 
 <!-- wp:heading {"textAlign":"center","style":{"typography":{"fontSize":"2.5rem","fontWeight":"800"},"color":{"text":"#ffffff"}}} -->
 <h2 class="wp-block-heading has-text-align-center" style="color:#fff;font-size:2.5rem;font-weight:800">Ready to check it out?</h2>

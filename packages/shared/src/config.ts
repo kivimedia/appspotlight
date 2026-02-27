@@ -2,7 +2,7 @@ import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { config as dotenvConfig } from 'dotenv';
-import type { AppSpotlightConfig } from './types.js';
+import type { AppSpotlightConfig, ProjectType, AppOverrides } from './types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -82,6 +82,7 @@ export function getConfig(): AppSpotlightConfig {
       teamId: envStr('VERCEL_TEAM_ID', defaults.vercel?.teamId ?? '') || undefined,
     },
     deployUrlMap: defaults.deployUrlMap,
+    appOverrides: defaults.appOverrides ?? {},
     appAuth: defaults.appAuth ?? {},
     visualQA: {
       enabled: process.env.VISUAL_QA_ENABLED !== 'false' && (defaults.visualQA?.enabled ?? true),
@@ -101,6 +102,23 @@ export function getConfig(): AppSpotlightConfig {
 /** Reset cached config (useful for testing) */
 export function resetConfig(): void {
   _config = null;
+}
+
+/** Resolve the project type for a repo from appOverrides config. Defaults to 'web-app'. */
+export function getProjectType(repoName: string): ProjectType {
+  const config = getConfig();
+  return config.appOverrides?.[repoName]?.projectType ?? 'web-app';
+}
+
+/** Get the full app overrides for a repo (returns empty object if none). */
+export function getAppOverrides(repoName: string): AppOverrides {
+  const config = getConfig();
+  return config.appOverrides?.[repoName] ?? {};
+}
+
+/** Returns true if the project type implies no deployed web URL exists. */
+export function isNonWebProject(projectType: ProjectType): boolean {
+  return projectType !== 'web-app';
 }
 
 /** Resolve app auth credentials from env vars (APP_AUTH_{REPO}_EMAIL / _PASSWORD) */
