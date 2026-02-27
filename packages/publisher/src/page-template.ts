@@ -80,6 +80,8 @@ ${innerContent}
 
 function buildGlobalStyles(): string {
   return `<!-- wp:html -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   /* Force black background — only content area, preserve header/nav */
@@ -289,6 +291,63 @@ function buildGlobalStyles(): string {
     box-shadow: 0 6px 20px rgba(171, 184, 195, 0.2) !important;
     transform: translateY(-2px) !important;
   }
+  /* ── Responsive: Tablet (≤1024px) ── */
+  @media (max-width: 1024px) {
+    .appspotlight-hero {
+      padding-top: 4rem !important;
+      padding-bottom: 2.5rem !important;
+    }
+  }
+  /* ── Responsive: Mobile (≤767px) ── */
+  @media (max-width: 767px) {
+    .appspotlight-hero {
+      padding-top: 2.5rem !important;
+      padding-bottom: 1.5rem !important;
+      padding-left: 1.25rem !important;
+      padding-right: 1.25rem !important;
+    }
+    .appspotlight-features,
+    .appspotlight-gallery,
+    .appspotlight-tech-stack,
+    .appspotlight-audience,
+    .appspotlight-cta-section {
+      padding-top: 2.5rem !important;
+      padding-bottom: 2.5rem !important;
+      padding-left: 1.25rem !important;
+      padding-right: 1.25rem !important;
+    }
+    .appspotlight-problem-solution {
+      padding-top: 2rem !important;
+      padding-bottom: 2rem !important;
+      padding-left: 1.25rem !important;
+      padding-right: 1.25rem !important;
+    }
+    /* Force columns to stack vertically on mobile */
+    .appspotlight-problem-solution.wp-block-columns,
+    .appspotlight-features .wp-block-columns,
+    .appspotlight-audience .wp-block-columns,
+    .appspotlight-gallery .wp-block-columns {
+      flex-direction: column !important;
+    }
+    .appspotlight-gallery .wp-block-column {
+      min-width: 100% !important;
+      flex-basis: 100% !important;
+    }
+    /* Cards — reduce padding on mobile */
+    .appspotlight-feature-card,
+    .appspotlight-ps-card,
+    .appspotlight-audience-card {
+      padding: 1.5rem !important;
+    }
+    .appspotlight-cta-section {
+      padding-bottom: 3rem !important;
+    }
+    /* Tech badges — smaller on mobile */
+    .appspotlight-badge-item {
+      padding: 8px 16px !important;
+      font-size: 0.9rem !important;
+    }
+  }
 </style>
 <!-- /wp:html -->`;
 }
@@ -301,11 +360,11 @@ function buildHeroSection(content: AppContent): string {
 <div class="wp-block-group appspotlight-hero" style="background-color:#000;margin-top:0;margin-bottom:0;padding-top:6rem;padding-right:2rem;padding-bottom:3rem;padding-left:2rem">
 
 <!-- wp:heading {"level":1,"style":{"typography":{"fontSize":"3.5rem","fontWeight":"900","lineHeight":"1.1"},"color":{"text":"#ffffff"}}} -->
-<h1 class="wp-block-heading" style="color:#fff;font-size:3.5rem;font-weight:900;line-height:1.1">${esc(content.app_name)}</h1>
+<h1 class="wp-block-heading" style="color:#fff;font-size:clamp(1.8rem,7vw,3.5rem);font-weight:900;line-height:1.1">${esc(content.app_name)}</h1>
 <!-- /wp:heading -->
 
 <!-- wp:paragraph {"style":{"typography":{"fontSize":"1.3rem","lineHeight":"1.6"},"color":{"text":"#abb8c3"}}} -->
-<p style="color:#abb8c3;font-size:1.3rem;line-height:1.6">${esc(content.tagline)}</p>
+<p style="color:#abb8c3;font-size:clamp(1rem,3vw,1.3rem);line-height:1.6">${esc(content.tagline)}</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:buttons {"layout":{"type":"flex","justifyContent":"left"}} -->
@@ -411,7 +470,7 @@ ${cols}
 <div class="wp-block-group appspotlight-features" style="background-color:#000;margin-top:0;margin-bottom:0;padding-top:4rem;padding-right:2rem;padding-bottom:4rem;padding-left:2rem">
 
 <!-- wp:heading {"textAlign":"center","style":{"typography":{"fontSize":"2.2rem","fontWeight":"800"},"color":{"text":"#ffffff"}}} -->
-<h2 class="wp-block-heading has-text-align-center" style="color:#fff;font-size:2.2rem;font-weight:800">What It Does</h2>
+<h2 class="wp-block-heading has-text-align-center" style="color:#fff;font-size:clamp(1.5rem,5vw,2.2rem);font-weight:800">What It Does</h2>
 <!-- /wp:heading -->
 
 <!-- wp:spacer {"height":"2rem"} -->
@@ -461,7 +520,7 @@ ${cols}
 <div class="wp-block-group appspotlight-gallery" style="background-color:#000;margin-top:0;margin-bottom:0;padding-top:4rem;padding-right:2rem;padding-bottom:2rem;padding-left:2rem">
 
 <!-- wp:heading {"textAlign":"center","style":{"typography":{"fontSize":"2.2rem","fontWeight":"800"},"color":{"text":"#ffffff"}}} -->
-<h2 class="wp-block-heading has-text-align-center" style="color:#fff;font-size:2.2rem;font-weight:800">${esc(heading)}</h2>
+<h2 class="wp-block-heading has-text-align-center" style="color:#fff;font-size:clamp(1.5rem,5vw,2.2rem);font-weight:800">${esc(heading)}</h2>
 <!-- /wp:heading -->
 
 <!-- wp:spacer {"height":"1rem"} -->
@@ -483,7 +542,7 @@ function buildTechStackSection(content: AppContent): string {
 <div class="wp-block-group appspotlight-tech-stack" style="background-color:#000;margin-top:0;margin-bottom:0;padding-top:4rem;padding-right:2rem;padding-bottom:4rem;padding-left:2rem">
 
 <!-- wp:heading {"textAlign":"center","style":{"typography":{"fontSize":"2.2rem","fontWeight":"800"},"color":{"text":"#ffffff"}}} -->
-<h2 class="wp-block-heading has-text-align-center" style="color:#fff;font-size:2.2rem;font-weight:800">The Tech Stack</h2>
+<h2 class="wp-block-heading has-text-align-center" style="color:#fff;font-size:clamp(1.5rem,5vw,2.2rem);font-weight:800">The Tech Stack</h2>
 <!-- /wp:heading -->
 
 <!-- wp:spacer {"height":"1.5rem"} -->
@@ -508,7 +567,7 @@ function buildAudienceSection(content: AppContent): string {
 <div class="wp-block-group appspotlight-audience" style="background-color:#000;margin-top:0;margin-bottom:0;padding-top:4rem;padding-right:2rem;padding-bottom:4rem;padding-left:2rem">
 
 <!-- wp:heading {"textAlign":"center","style":{"typography":{"fontSize":"2.2rem","fontWeight":"800"},"color":{"text":"#ffffff"}}} -->
-<h2 class="wp-block-heading has-text-align-center" style="color:#fff;font-size:2.2rem;font-weight:800">Who It's For</h2>
+<h2 class="wp-block-heading has-text-align-center" style="color:#fff;font-size:clamp(1.5rem,5vw,2.2rem);font-weight:800">Who It's For</h2>
 <!-- /wp:heading -->
 
 <!-- wp:spacer {"height":"1rem"} -->
@@ -516,7 +575,7 @@ function buildAudienceSection(content: AppContent): string {
 <!-- /wp:spacer -->
 
 <!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"1.3rem"},"color":{"text":"#abb8c3"}}} -->
-<p class="has-text-align-center" style="color:#abb8c3;font-size:1.3rem">${emojis[0]} ${esc(audienceSegments[0].persona)}</p>
+<p class="has-text-align-center" style="color:#abb8c3;font-size:clamp(1rem,3vw,1.3rem)">${emojis[0]} ${esc(audienceSegments[0].persona)}</p>
 <!-- /wp:paragraph -->
 
 </div>
@@ -549,7 +608,7 @@ ${benefitBlock}
 <div class="wp-block-group appspotlight-audience" style="background-color:#000;margin-top:0;margin-bottom:0;padding-top:4rem;padding-right:2rem;padding-bottom:4rem;padding-left:2rem">
 
 <!-- wp:heading {"textAlign":"center","style":{"typography":{"fontSize":"2.2rem","fontWeight":"800"},"color":{"text":"#ffffff"}}} -->
-<h2 class="wp-block-heading has-text-align-center" style="color:#fff;font-size:2.2rem;font-weight:800">Who It's For</h2>
+<h2 class="wp-block-heading has-text-align-center" style="color:#fff;font-size:clamp(1.5rem,5vw,2.2rem);font-weight:800">Who It's For</h2>
 <!-- /wp:heading -->
 
 <!-- wp:spacer {"height":"2rem"} -->
@@ -579,7 +638,7 @@ function buildCtaSection(content: AppContent, repoUrl?: string): string {
 <div class="wp-block-group appspotlight-cta-section" style="background-color:#000;margin-top:0;margin-bottom:0;padding-top:2rem;padding-right:2rem;padding-bottom:5rem;padding-left:2rem">
 
 <!-- wp:heading {"textAlign":"center","style":{"typography":{"fontSize":"2.5rem","fontWeight":"800"},"color":{"text":"#ffffff"}}} -->
-<h2 class="wp-block-heading has-text-align-center" style="color:#fff;font-size:2.5rem;font-weight:800">Ready to check it out?</h2>
+<h2 class="wp-block-heading has-text-align-center" style="color:#fff;font-size:clamp(1.6rem,5vw,2.5rem);font-weight:800">Ready to check it out?</h2>
 <!-- /wp:heading -->
 
 <!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"1.1rem"},"color":{"text":"#abb8c3"}}} -->

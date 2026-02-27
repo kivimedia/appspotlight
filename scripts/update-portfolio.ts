@@ -105,10 +105,20 @@ async function getPublishedApps(): Promise<AppPageInfo[]> {
   // Fetch screenshots from WP page content
   const screenshotMap = await fetchScreenshotsFromWP();
 
-  return result.rows.map(row => ({
-    ...row,
-    screenshot_url: screenshotMap.get(row.wp_page_id ?? 0) ?? null,
-  }));
+  // For apps without page screenshots, try the media library
+  const apps: AppPageInfo[] = [];
+  for (const row of result.rows) {
+    let screenshot_url = screenshotMap.get(row.wp_page_id ?? 0) ?? null;
+    if (!screenshot_url) {
+      const shortName = row.repo_name.replace(/^kivimedia\//, '');
+      screenshot_url = await findMediaScreenshot(shortName);
+      if (screenshot_url) {
+        log.info(`  Found media library screenshot for ${shortName}: ${screenshot_url.substring(0, 80)}`);
+      }
+    }
+    apps.push({ ...row, screenshot_url });
+  }
+  return apps;
 }
 
 // ─── WP Screenshot Extraction ───────────────────────────────────────────────
@@ -121,18 +131,18 @@ function extractFirstImage(html: string): string | null {
 
 async function fetchScreenshotsFromWP(): Promise<Map<number, string>> {
   const map = new Map<number, string>();
+  const config = getConfig();
+  const auth = Buffer.from(`${config.wordpress.username}:${config.wordpress.appPassword}`).toString('base64');
 
   try {
-    // Fetch all child pages of /apps/ — they return rendered content
+    // 1. Fetch all child pages of /apps/ — they return rendered content
     const childPages = await fetchChildPages('apps');
     for (const page of childPages) {
       const img = extractFirstImage(page.content);
       if (img) map.set(page.id, img);
     }
 
-    // Also fetch top-level app pages (older apps not under /apps/)
-    const config = getConfig();
-    const auth = Buffer.from(`${config.wordpress.username}:${config.wordpress.appPassword}`).toString('base64');
+    // 2. Also fetch top-level app pages (older apps not under /apps/)
     const topLevelSlugs = ['karaokemadness', 'deploy-helper', 'lavabowl', 'sendtoamram', 'choirmind'];
     for (const slug of topLevelSlugs) {
       try {
@@ -155,6 +165,26 @@ async function fetchScreenshotsFromWP(): Promise<Map<number, string>> {
   }
 
   return map;
+}
+
+/** Search WP media library for a screenshot matching the repo name */
+async function findMediaScreenshot(repoName: string): Promise<string | null> {
+  const config = getConfig();
+  const auth = Buffer.from(`${config.wordpress.username}:${config.wordpress.appPassword}`).toString('base64');
+  const searchTerm = repoName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+  try {
+    const resp = await fetch(
+      `${config.wordpress.baseUrl}/wp-json/wp/v2/media?search=${searchTerm}&per_page=5&_fields=id,source_url,mime_type&mime_type=image`,
+      { headers: { 'Authorization': `Basic ${auth}` } },
+    );
+    if (!resp.ok) return null;
+    const media = await resp.json() as Array<{ id: number; source_url: string; mime_type: string }>;
+    // Prefer desktop screenshots, then any image
+    const desktop = media.find(m => m.source_url.includes('desktop'));
+    return (desktop ?? media[0])?.source_url ?? null;
+  } catch {
+    return null;
+  }
 }
 
 // ─── HTML Generation ────────────────────────────────────────────────────────
@@ -208,380 +238,127 @@ function generatePortfolioContent(apps: AppCard[]): string {
 
   const arrowSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
 
-  // ── Build filter buttons ──
+  // ── Shared inline style fragments ──
+  const S = {
+    reset: 'box-sizing:border-box;margin:0;padding:0;',
+    font: "font-family:'Outfit',sans-serif;",
+    mono: "font-family:'JetBrains Mono',monospace;",
+    container: 'max-width:1200px;margin:0 auto;padding:0 24px;position:relative;z-index:1;',
+    badge: 'padding:3px 10px;border-radius:100px;font-size:0.7rem;font-weight:500;display:inline-block;',
+    pill: "padding:3px 8px;border-radius:6px;font-size:0.68rem;font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,0.05);color:#606078;border:1px solid rgba(255,255,255,0.06);display:inline-block;",
+  };
+
+  // ── Build filter buttons with inline onclick (WP strips <script> tags) ──
+  const btnBase = `${S.font}padding:8px 20px;border-radius:100px;border:1px solid #2a2a3a;background:transparent;color:#9090a8;font-size:0.85rem;font-weight:500;cursor:pointer;`;
+  const btnActiveAll = `background:#16161f;border-color:#3a3a4f;color:#f0f0f5;`;
+  // Filter function: resets all button styles, sets clicked one active, hides/shows cards
+  const filterFn = `(function(b){var r=document.getElementById('kp-root');if(!r)return;var f=b.dataset.filter;var bg={all:'background:#16161f;border-color:#3a3a4f;color:#f0f0f5',agents:'background:#6366F1;color:#fff;border-color:transparent',games:'background:#EC4899;color:#fff;border-color:transparent',business:'background:#10B981;color:#fff;border-color:transparent',music:'background:#F59E0B;color:#fff;border-color:transparent',hosting:'background:#3B82F6;color:#fff;border-color:transparent',devtools:'background:#F97316;color:#fff;border-color:transparent'};document.getElementById('kp-filter-bar').querySelectorAll('button').forEach(function(x){x.style.background='transparent';x.style.borderColor='#2a2a3a';x.style.color='#9090a8'});var s=bg[f];if(s){s.split(';').forEach(function(p){var kv=p.split(':');if(kv.length===2)b.style[kv[0].trim().replace(/-([a-z])/g,function(m,c){return c.toUpperCase()})]=kv[1].trim()})}r.querySelectorAll('.project-card').forEach(function(c){var d=c.dataset.categories||'';c.style.display=(f==='all'||d.indexOf(f)!==-1)?'flex':'none'});var fs=document.getElementById('kp-featured-section');if(fs){var fc=fs.querySelector('[data-categories]');var fd=fc?fc.dataset.categories||'':'';fs.style.display=(f==='all'||fd.indexOf(f)!==-1)?'block':'none'}})(this)`;
+  const countStyle = `display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:rgba(255,255,255,0.15);font-size:0.7rem;margin-left:6px;${S.mono}`;
   const filterButtons = [
-    `<button class="filter-btn active" data-filter="all">All<span class="filter-count">${apps.length}</span></button>`,
+    `<button data-filter="all" onclick="${filterFn}" style="${btnBase}${btnActiveAll}">All<span style="${countStyle}">${apps.length}</span></button>`,
     ...activeCats.map(([cat, count]) => {
       const meta = CATEGORY_META[cat as Category];
-      return `<button class="filter-btn" data-filter="${cat}">${meta.emoji} ${meta.label}<span class="filter-count">${count}</span></button>`;
+      return `<button data-filter="${cat}" onclick="${filterFn}" style="${btnBase}">${meta.emoji} ${meta.label}<span style="${countStyle}">${count}</span></button>`;
     }),
   ].join('\n      ');
 
+  // ── Category badge colors ──
+  const catBadgeStyle: Record<string, string> = {
+    agents:   'background:rgba(99,102,241,0.15);color:#a5b4fc;',
+    games:    'background:rgba(236,72,153,0.15);color:#f9a8d4;',
+    business: 'background:rgba(16,185,129,0.15);color:#6ee7b7;',
+    music:    'background:rgba(245,158,11,0.15);color:#fcd34d;',
+    hosting:  'background:rgba(59,130,246,0.15);color:#93c5fd;',
+    devtools: 'background:rgba(249,115,22,0.15);color:#fdba74;',
+  };
+  const catFilterBg: Record<string, string> = {
+    all:      'background:#16161f;border-color:#3a3a4f;color:#f0f0f5;',
+    agents:   'background:#6366F1;color:#fff;border-color:transparent;',
+    games:    'background:#EC4899;color:#fff;border-color:transparent;',
+    business: 'background:#10B981;color:#fff;border-color:transparent;',
+    music:    'background:#F59E0B;color:#fff;border-color:transparent;',
+    hosting:  'background:#3B82F6;color:#fff;border-color:transparent;',
+    devtools: 'background:#F97316;color:#fff;border-color:transparent;',
+  };
+
   // ── Build featured card ──
-  const featuredHtml = featured ? `
-<section class="featured-section" id="kp-featured-section">
-  <div class="kp-container">
-    <div class="featured-label">Featured Project</div>
-    <a href="${escHtml(getPagePath(featured))}" class="featured-card" data-categories="${featured.categories.join(' ')}">
-      <div class="featured-image">
-        <span class="featured-new-badge">&#x2B50; Featured</span>
-        ${featured.screenshot_url
-          ? `<img decoding="async" src="${escHtml(featured.screenshot_url)}" alt="${escHtml(featured.app_name)}" loading="lazy">`
-          : `<div class="card-image-placeholder"><div style="text-align:center;position:relative;z-index:1;"><div style="font-size:2.5rem;margin-bottom:6px;font-weight:800;background:linear-gradient(135deg,#6366f1,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${escHtml(featured.app_name)}</div></div></div>`
-        }
-      </div>
-      <div class="featured-content">
-        <div class="card-badges">
-          ${featured.categories.map(c => `<span class="cat-badge cat-${c}">${CATEGORY_META[c].label}</span>`).join('\n          ')}
-        </div>
-        <h2>${escHtml(featured.app_name)}</h2>
-        <p class="tagline">${escHtml(featured.tagline)}</p>
-        <div class="featured-meta">
-          ${featured.tech_stack.slice(0, 5).map(t => `<span class="tech-pill">${escHtml(t)}</span>`).join('\n          ')}
-        </div>
-        <span class="featured-cta">View Project ${arrowSvg}</span>
-      </div>
-    </a>
-  </div>
-</section>` : '';
+  const featuredHtml = featured ? (() => {
+    const featCatBadges = featured.categories.map(c =>
+      `<span style="${S.badge}${catBadgeStyle[c]}">${CATEGORY_META[c].label}</span>`
+    ).join(' ');
+    const featTechPills = featured.tech_stack.slice(0, 5).map(t =>
+      `<span style="${S.pill}">${escHtml(t)}</span>`
+    ).join(' ');
+    const featImg = featured.screenshot_url
+      ? `<img decoding="async" src="${escHtml(featured.screenshot_url)}" alt="${escHtml(featured.app_name)}" loading="eager" fetchpriority="high" width="600" height="400" style="width:100%;height:100%;object-fit:cover;display:block;">`
+      : `<div style="height:100%;min-height:280px;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);display:flex;align-items:center;justify-content:center;"><div style="text-align:center;"><div style="font-size:2.5rem;font-weight:800;background:linear-gradient(135deg,#6366f1,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${escHtml(featured.app_name)}</div></div></div>`;
+    return `<div id="kp-featured-section" data-categories="${featured.categories.join(' ')}" style="${S.reset}margin-bottom:32px;"><div style="${S.container}"><div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.1em;color:#606078;margin-bottom:16px;">Featured Project</div><div class="featured-card" data-categories="${featured.categories.join(' ')}" onclick="window.location.href='${escHtml(getPagePath(featured))}'" style="display:grid;grid-template-columns:var(--kp-feat-cols,1.2fr 1fr);gap:0;background:#16161f;border-radius:16px;border:1px solid #2a2a3a;overflow:hidden;cursor:pointer;text-decoration:none;color:#f0f0f5;position:relative;"><div style="position:relative;overflow:hidden;min-height:var(--kp-feat-min-h,280px);"><span style="position:absolute;top:16px;left:16px;padding:4px 12px;background:linear-gradient(135deg,#6366f1,#a855f7,#ec4899);border-radius:100px;font-size:0.7rem;font-weight:700;text-transform:uppercase;color:#fff;z-index:2;">&#x2B50; Featured</span>${featImg}</div><div style="padding:var(--kp-feat-pad,40px);display:flex;flex-direction:column;justify-content:center;position:relative;z-index:1;"><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">${featCatBadges}</div><h2 style="color:#f0f0f5;${S.font}font-size:1.8rem;font-weight:700;margin:0 0 12px 0;padding:0;">${escHtml(featured.app_name)}</h2><div style="color:#9090a8;font-size:1rem;margin:0 0 20px 0;padding:0;line-height:1.6;">${escHtml(featured.tagline)}</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;">${featTechPills}</div><span style="display:inline-flex;align-items:center;gap:8px;padding:10px 24px;background:linear-gradient(135deg,#6366f1,#a855f7,#ec4899);border-radius:100px;color:#fff;font-weight:600;font-size:0.9rem;text-decoration:none;align-self:flex-start;">View Project ${arrowSvg}</span></div></div></div></div>`;
+  })() : '';
 
   // ── Build project cards ──
-  const projectCards = gridApps.map((app, i) => {
-    const catBadges = app.categories.map(c => `<span class="cat-badge cat-${c}">${CATEGORY_META[c].label}</span>`).join('\n            ');
-    const techPills = app.tech_stack.slice(0, 4).map(t => `<span class="tech-pill">${escHtml(t)}</span>`).join('\n            ');
+  const projectCards = gridApps.map(app => {
+    const catBadges = app.categories.map(c =>
+      `<span style="${S.badge}${catBadgeStyle[c]}">${CATEGORY_META[c].label}</span>`
+    ).join(' ');
+    const techPills = app.tech_stack.slice(0, 4).map(t =>
+      `<span style="${S.pill}">${escHtml(t)}</span>`
+    ).join(' ');
     const hasScreenshot = app.screenshot_url && !app.screenshot_url.includes('branded-card');
-
     const imageHtml = hasScreenshot
-      ? `<div class="card-image">
-          <img decoding="async" src="${escHtml(app.screenshot_url!)}" alt="${escHtml(app.app_name)}" loading="lazy">
-        </div>`
-      : `<div class="card-image-placeholder" style="background:linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);">
+      ? `<div style="position:relative;height:200px;overflow:hidden;background:#12121a;"><img decoding="async" src="${escHtml(app.screenshot_url!)}" alt="${escHtml(app.app_name)}" loading="lazy" width="400" height="200" style="width:100%;height:100%;object-fit:cover;display:block;"></div>`
+      : `<div style="height:200px;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
           <div style="text-align:center;position:relative;z-index:1;">
             <div style="font-size:2rem;margin-bottom:6px;letter-spacing:-0.02em;font-weight:800;background:linear-gradient(135deg,#6366f1,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${escHtml(app.app_name)}</div>
-            <div style="color:var(--text-muted);font-size:0.75rem;letter-spacing:0.05em;">${escHtml(app.subtitle.toUpperCase())}</div>
+            <div style="color:#606078;font-size:0.75rem;letter-spacing:0.05em;">${escHtml(app.subtitle.toUpperCase())}</div>
           </div>
         </div>`;
 
-    return `
-      <a href="${escHtml(getPagePath(app))}" class="project-card" data-categories="${app.categories.join(' ')}">
-        ${imageHtml}
-        <div class="card-content">
-          <div class="card-badges">
-            ${catBadges}
-          </div>
-          <h3>${escHtml(app.app_name)}</h3>
-          <p class="tagline">${escHtml(app.tagline)}</p>
-          <div class="tech-pills">
-            ${techPills}
-          </div>
-        </div>
-        <div class="card-footer">
-          <div class="card-stats">
-            <span>${app.emoji} ${escHtml(app.subtitle)}</span>
-          </div>
-          ${arrowSvg.replace('class="', 'class="card-arrow ')}
-        </div>
-      </a>`;
-  }).join('\n');
+    return `<div class="project-card" data-categories="${app.categories.join(' ')}" onclick="window.location.href='${escHtml(getPagePath(app))}'" style="background:#16161f;border-radius:16px;border:1px solid #2a2a3a;overflow:hidden;cursor:pointer;text-decoration:none;color:#f0f0f5;display:flex;flex-direction:column;position:relative;transition:transform 0.3s ease,box-shadow 0.3s ease;">${imageHtml}<div style="padding:24px;flex:1;display:flex;flex-direction:column;position:relative;z-index:1;"><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">${catBadges}</div><h3 style="color:#f0f0f5;${S.font}font-size:1.15rem;font-weight:700;margin:0 0 8px 0;padding:0;">${escHtml(app.app_name)}</h3><div style="color:#9090a8;font-size:0.88rem;margin:0 0 16px 0;padding:0;line-height:1.5;flex:1;">${escHtml(app.tagline)}</div><div style="display:flex;flex-wrap:wrap;gap:6px;">${techPills}</div></div><div style="padding:16px 24px;border-top:1px solid #2a2a3a;display:flex;flex-direction:row;justify-content:space-between;align-items:center;position:relative;z-index:1;"><div style="display:flex;flex-direction:row;gap:16px;font-size:0.75rem;color:#606078;"><span style="display:flex;align-items:center;gap:4px;">${app.emoji} ${escHtml(app.subtitle)}</span></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#606078" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div></div>`;
+  }).join('');
 
-  // ── Assemble full page ──
-  return `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
-<style>
-  /* === THEME OVERRIDES: full-width, no sidebar, no WP title, no white gaps === */
-  .page-id-1905 .entry-title,
-  .page-id-1905 .page-title,
-  .page-id-1905 h1.entry-title { display: none !important; }
-  .page-id-1905 #sidebar,
-  .page-id-1905 .et_right_sidebar #sidebar,
-  .page-id-1905 .widget-area { display: none !important; }
-  .page-id-1905 #left-area,
-  .page-id-1905 .et_right_sidebar #left-area,
-  .page-id-1905 .et_no_sidebar #left-area { width: 100% !important; max-width: 100% !important; padding: 0 !important; float: none !important; }
-  .page-id-1905 #main-content .container,
-  .page-id-1905 #content-area .container,
-  .page-id-1905 .entry-content .container { max-width: 100% !important; width: 100% !important; padding: 0 !important; }
-  .page-id-1905 #main-content .et_pb_row { max-width: 100% !important; width: 100% !important; padding: 0 !important; }
-  .page-id-1905 #main-content { padding-top: 0 !important; background: #0a0a0f !important; }
-  .page-id-1905 .et_pb_section { padding: 0 !important; }
-  .page-id-1905 #page-container { padding-top: 0 !important; background: #0a0a0f !important; }
-  .page-id-1905 .entry-content { margin: 0 !important; padding: 0 !important; }
-  .page-id-1905 #content-area { background: #0a0a0f !important; }
-  .page-id-1905 .container:before,
-  .page-id-1905 .container:after { display: none !important; }
-  .page-id-1905 article.page { background: #0a0a0f !important; }
-  .page-id-1905 #left-area article { background: #0a0a0f !important; }
-  .page-id-1905 .post-content { background: #0a0a0f !important; }
+  // ── Active filter button styles (for JS onclick) ──
+  const filterBgJson = JSON.stringify(catFilterBg).replace(/"/g, "'");
 
-  .kivi-portfolio {
-    --bg-primary: #0a0a0f;
-    --bg-secondary: #12121a;
-    --bg-card: #16161f;
-    --bg-card-hover: #1c1c28;
-    --text-primary: #f0f0f5;
-    --text-secondary: #9090a8;
-    --text-muted: #606078;
-    --border: #2a2a3a;
-    --border-hover: #3a3a4f;
-    --accent-gradient: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
-    --cat-agents: #6366F1;
-    --cat-games: #EC4899;
-    --cat-business: #10B981;
-    --cat-music: #F59E0B;
-    --cat-hosting: #3B82F6;
-    --cat-devtools: #F97316;
-    --status-live: #10B981;
-    --radius: 16px;
-    --radius-sm: 8px;
-    --radius-xs: 6px;
-    background: #0a0a0f !important;
-    color: #f0f0f5 !important;
-    font-family: 'Outfit', sans-serif !important;
-    line-height: 1.6 !important;
-    position: relative !important;
-    overflow: clip visible;
-    margin: 0 -20px 0 -20px !important;
-    padding: 0 !important;
-  }
-  .kivi-portfolio *, .kivi-portfolio *::before, .kivi-portfolio *::after { box-sizing: border-box !important; }
-  .kivi-portfolio a { color: inherit !important; text-decoration: none !important; }
-  .kivi-portfolio h1, .kivi-portfolio h2, .kivi-portfolio h3, .kivi-portfolio h4 { color: #f0f0f5 !important; padding-bottom: 0 !important; margin: 0 !important; font-family: 'Outfit', sans-serif !important; }
-  .kivi-portfolio p { color: #9090a8 !important; margin: 0 !important; padding: 0 !important; }
+  // ── Minimal CSS: ONLY for hover, media queries, hide/show (can't be inline) ──
+  // ALL structural/visual styles are INLINE to defeat Divi.
+  // NO <p> tags anywhere — wpautop inserts <p> around inline elements.
+  // NO newlines between block elements — wpautop turns those into <p> too.
+  const css = `<style>.page-id-1905 .entry-title,.page-id-1905 .page-title,.page-id-1905 h1.entry-title{display:none!important}.page-id-1905 #sidebar,.page-id-1905 .widget-area{display:none!important}.page-id-1905 #left-area,.page-id-1905 .et_right_sidebar #left-area,.page-id-1905 .et_no_sidebar #left-area{width:100%!important;max-width:100%!important;padding:0!important;float:none!important}.page-id-1905 #main-content,.page-id-1905 #page-container,.page-id-1905 #content-area,.page-id-1905 article.page,.page-id-1905 .entry-content{background:#0a0a0f!important;padding:0!important;margin:0!important}.page-id-1905 #main-content .container{max-width:100%!important;width:100%!important;padding:0!important}.page-id-1905 .et_pb_section{padding:0!important}.page-id-1905 #main-content .et_pb_row{max-width:100%!important;width:100%!important;padding:0!important}#kp-root .project-card:hover{transform:translateY(-6px)!important;box-shadow:0 20px 50px rgba(0,0,0,0.3)!important}@keyframes kp-pulse-dot{0%,100%{opacity:1}50%{opacity:0.4}}@media(max-width:900px){#kp-root{--kp-grid-cols:repeat(2,1fr);--kp-feat-cols:1fr;--kp-stat-gap:32px;--kp-hero-pad:60px 0 32px;--kp-feat-pad:28px;--kp-feat-min-h:220px;--kp-cta-pad:40px 28px;--kp-cta-outer:40px 0 60px}}@media(max-width:600px){#kp-root{--kp-grid-cols:1fr;--kp-grid-gap:16px;--kp-stat-gap:16px;--kp-hero-pad:48px 0 24px;--kp-feat-pad:20px;--kp-feat-min-h:200px;--kp-cta-pad:32px 20px;--kp-cta-outer:32px 0 48px}}</style>`;
 
-  .kivi-portfolio .bg-glow { position: absolute !important; width: 600px !important; height: 600px !important; border-radius: 50% !important; filter: blur(150px) !important; opacity: 0.3 !important; pointer-events: none !important; z-index: 0 !important; }
-  .kivi-portfolio .bg-glow-1 { top: -200px; right: -100px; background: var(--cat-agents) !important; }
-  .kivi-portfolio .bg-glow-2 { bottom: -300px; left: -200px; background: var(--cat-games) !important; }
-  .kivi-portfolio .kp-container { max-width: 1200px !important; margin: 0 auto !important; padding: 0 24px !important; position: relative !important; z-index: 1 !important; }
+  const fonts = `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">`;
 
-  /* HERO */
-  .kivi-portfolio .kp-hero { padding: 80px 0 40px !important; text-align: center !important; }
-  .kivi-portfolio .hero-badge { display: inline-flex !important; align-items: center !important; gap: 8px !important; padding: 6px 16px !important; background: rgba(99, 102, 241, 0.1) !important; border: 1px solid rgba(99, 102, 241, 0.2) !important; border-radius: 100px !important; font-size: 0.8rem !important; color: #a78bfa !important; margin-bottom: 24px !important; font-weight: 500 !important; letter-spacing: 0.02em !important; }
-  .kivi-portfolio .hero-badge .dot { width: 6px !important; height: 6px !important; background: #10B981 !important; border-radius: 50% !important; animation: kp-pulse-dot 2s infinite !important; }
-  @keyframes kp-pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-  .kivi-portfolio .kp-hero h1 { font-size: clamp(2.2rem, 5vw, 3.5rem) !important; font-weight: 800 !important; letter-spacing: -0.03em !important; line-height: 1.1 !important; margin-bottom: 20px !important; color: #f0f0f5 !important; text-align: center !important; }
-  .kivi-portfolio .gradient-text { background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; background-clip: text !important; color: transparent !important; }
-  .kivi-portfolio .kp-hero p { color: #9090a8 !important; font-size: 1.1rem !important; max-width: 600px !important; margin: 0 auto !important; line-height: 1.7 !important; text-align: center !important; }
+  // Build as one continuous string with NO newlines between block elements
+  const parts: string[] = [];
+  parts.push(fonts);
+  parts.push(css);
+  parts.push(`<div id="kp-root" style="background:#0a0a0f;color:#f0f0f5;${S.font}line-height:1.6;position:relative;overflow:hidden;margin:0;padding:0;--kp-grid-cols:repeat(3,1fr);--kp-grid-gap:20px;--kp-feat-cols:1.2fr 1fr;--kp-stat-gap:48px;--kp-stat-dir:row;--kp-hero-pad:80px 0 40px;--kp-cta-pad:60px 40px;--kp-cta-outer:60px 0 80px;--kp-feat-pad:40px;--kp-feat-min-h:280px;">`);
 
-  /* STATS */
-  .kivi-portfolio .stats-bar { display: flex !important; justify-content: center !important; gap: 48px !important; padding: 32px 0 !important; margin-bottom: 20px !important; flex-direction: row !important; }
-  .kivi-portfolio .stat { text-align: center !important; }
-  .kivi-portfolio .stat-number { font-size: 1.8rem !important; font-weight: 700 !important; font-family: 'JetBrains Mono', monospace !important; background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; background-clip: text !important; color: transparent !important; }
-  .kivi-portfolio .stat-label { font-size: 0.8rem !important; color: #606078 !important; text-transform: uppercase !important; letter-spacing: 0.08em !important; margin-top: 4px !important; }
+  // HERO
+  parts.push(`<div style="padding:var(--kp-hero-pad,80px 0 40px);text-align:center;"><div style="${S.container}"><div style="display:inline-flex;align-items:center;gap:8px;padding:6px 16px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);border-radius:100px;font-size:0.8rem;color:#a78bfa;margin-bottom:24px;font-weight:500;"><span style="width:6px;height:6px;background:#10B981;border-radius:50%;display:inline-block;animation:kp-pulse-dot 2s infinite;"></span> ${apps.length} projects and counting</div><h1 style="color:#f0f0f5;${S.font}font-size:clamp(2.2rem,5vw,3.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin:0 0 20px 0;padding:0;text-align:center;">Apps &amp; Projects<br>by <span style="background:linear-gradient(135deg,#6366f1,#a855f7,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Kivi Media</span></h1><div style="color:#9090a8;font-size:1.1rem;max-width:600px;margin:0 auto;line-height:1.7;padding:0;text-align:center;">AI-powered apps, games, and business tools. Built with vibe coding, shipped fast, and designed to solve real problems.</div></div></div>`);
 
-  /* FILTER */
-  .kivi-portfolio .filter-section { padding: 0 0 40px !important; }
-  .kivi-portfolio .filter-bar { display: flex !important; justify-content: center !important; gap: 10px !important; flex-wrap: wrap !important; flex-direction: row !important; }
-  .kivi-portfolio .filter-btn { padding: 8px 20px !important; border-radius: 100px !important; border: 1px solid var(--border) !important; background: transparent !important; color: #9090a8 !important; font-family: 'Outfit', sans-serif !important; font-size: 0.85rem !important; font-weight: 500 !important; cursor: pointer !important; transition: all 0.25s ease !important; }
-  .kivi-portfolio .filter-btn:hover { border-color: var(--border-hover) !important; color: #f0f0f5 !important; transform: translateY(-1px); }
-  .kivi-portfolio .filter-btn.active { color: #fff !important; border-color: transparent !important; }
-  .kivi-portfolio .filter-btn.active[data-filter="all"] { background: var(--bg-card) !important; border-color: var(--border-hover) !important; color: #f0f0f5 !important; }
-  .kivi-portfolio .filter-btn.active[data-filter="agents"] { background: #6366F1 !important; box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3) !important; }
-  .kivi-portfolio .filter-btn.active[data-filter="games"] { background: #EC4899 !important; box-shadow: 0 4px 20px rgba(236, 72, 153, 0.3) !important; }
-  .kivi-portfolio .filter-btn.active[data-filter="business"] { background: #10B981 !important; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3) !important; }
-  .kivi-portfolio .filter-btn.active[data-filter="music"] { background: #F59E0B !important; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3) !important; }
-  .kivi-portfolio .filter-btn.active[data-filter="hosting"] { background: #3B82F6 !important; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3) !important; }
-  .kivi-portfolio .filter-btn.active[data-filter="devtools"] { background: #F97316 !important; box-shadow: 0 4px 20px rgba(249, 115, 22, 0.3) !important; }
-  .kivi-portfolio .filter-count { display: inline-flex !important; align-items: center !important; justify-content: center !important; min-width: 20px !important; height: 20px !important; padding: 0 6px !important; border-radius: 10px !important; background: rgba(255,255,255,0.15) !important; font-size: 0.7rem !important; margin-left: 6px !important; font-family: 'JetBrains Mono', monospace !important; }
+  // STATS
+  const statStyle = `${S.mono}font-size:1.8rem;font-weight:700;background:linear-gradient(135deg,#6366f1,#a855f7,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;`;
+  const statLabel = `font-size:0.8rem;color:#606078;text-transform:uppercase;letter-spacing:0.08em;margin-top:4px;`;
+  parts.push(`<div style="${S.container}"><div style="display:flex;flex-direction:var(--kp-stat-dir,row);justify-content:center;gap:var(--kp-stat-gap,48px);padding:32px 0;margin-bottom:20px;flex-wrap:wrap;"><div style="text-align:center;"><div style="${statStyle}">${apps.length}</div><div style="${statLabel}">Projects</div></div><div style="text-align:center;"><div style="${statStyle}">${liveCount}</div><div style="${statLabel}">Live</div></div><div style="text-align:center;"><div style="${statStyle}">${activeCats.length}</div><div style="${statLabel}">Categories</div></div><div style="text-align:center;"><div style="${statStyle}">20+</div><div style="${statLabel}">Technologies</div></div></div></div>`);
 
-  /* FEATURED */
-  .kivi-portfolio .featured-section { margin-bottom: 32px !important; }
-  .kivi-portfolio .featured-label { font-size: 0.75rem !important; text-transform: uppercase !important; letter-spacing: 0.1em !important; color: #606078 !important; margin-bottom: 16px !important; display: flex !important; align-items: center !important; gap: 8px !important; }
-  .kivi-portfolio .featured-label::after { content: '' !important; flex: 1 !important; height: 1px !important; background: var(--border) !important; }
-  .kivi-portfolio .featured-card { display: grid !important; grid-template-columns: 1.2fr 1fr !important; gap: 0 !important; background: var(--bg-card) !important; border-radius: var(--radius) !important; border: 1px solid var(--border) !important; overflow: hidden !important; transition: all 0.35s ease; cursor: pointer !important; text-decoration: none !important; color: inherit !important; position: relative !important; }
-  .kivi-portfolio .featured-card::before { content: ''; position: absolute; inset: 0; border-radius: var(--radius); background: var(--accent-gradient); opacity: 0; transition: opacity 0.35s; z-index: 0; padding: 1px; -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
-  .kivi-portfolio .featured-card:hover::before { opacity: 1; }
-  .kivi-portfolio .featured-card:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
-  .kivi-portfolio .featured-card:hover .featured-image img { transform: scale(1.03); }
-  .kivi-portfolio .featured-image { position: relative !important; overflow: hidden !important; min-height: 280px !important; }
-  .kivi-portfolio .featured-image img { width: 100% !important; height: 100% !important; object-fit: cover !important; transition: transform 0.5s ease; }
-  .kivi-portfolio .featured-new-badge { position: absolute !important; top: 16px !important; left: 16px !important; padding: 4px 12px !important; background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899) !important; border-radius: 100px !important; font-size: 0.7rem !important; font-weight: 700 !important; letter-spacing: 0.06em !important; text-transform: uppercase !important; color: #fff !important; z-index: 2 !important; }
-  .kivi-portfolio .featured-content { padding: 40px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; position: relative !important; z-index: 1 !important; }
-  .kivi-portfolio .featured-content h2 { font-size: 1.8rem !important; font-weight: 700 !important; letter-spacing: -0.02em !important; margin-bottom: 12px !important; color: #f0f0f5 !important; }
-  .kivi-portfolio .featured-content .tagline { color: #9090a8 !important; font-size: 1rem !important; margin-bottom: 20px !important; line-height: 1.6 !important; }
-  .kivi-portfolio .featured-meta { display: flex !important; flex-wrap: wrap !important; gap: 8px !important; margin-bottom: 24px !important; }
-  .kivi-portfolio .featured-cta { display: inline-flex !important; align-items: center !important; gap: 8px !important; padding: 10px 24px !important; background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899) !important; border-radius: 100px !important; color: #fff !important; font-weight: 600 !important; font-size: 0.9rem !important; text-decoration: none !important; transition: all 0.25s; align-self: flex-start !important; }
-  .kivi-portfolio .featured-cta:hover { transform: translateX(4px); box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4); }
+  // FILTER
+  parts.push(`<div style="padding:0 0 40px;"><div style="${S.container}"><div id="kp-filter-bar" style="display:flex;flex-direction:row;justify-content:center;gap:10px;flex-wrap:wrap;">${filterButtons}</div></div></div>`);
 
-  /* GRID */
-  .kivi-portfolio .grid-section { padding: 0 0 80px !important; }
-  .kivi-portfolio .grid-label { font-size: 0.75rem !important; text-transform: uppercase !important; letter-spacing: 0.1em !important; color: #606078 !important; margin-bottom: 16px !important; display: flex !important; align-items: center !important; gap: 8px !important; }
-  .kivi-portfolio .grid-label::after { content: '' !important; flex: 1 !important; height: 1px !important; background: var(--border) !important; }
-  .kivi-portfolio .projects-grid { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 20px !important; }
+  // FEATURED
+  if (featuredHtml) parts.push(featuredHtml);
 
-  /* PROJECT CARD */
-  .kivi-portfolio .project-card { background: var(--bg-card) !important; border-radius: var(--radius) !important; border: 1px solid var(--border) !important; overflow: hidden !important; transition: all 0.3s ease; cursor: pointer !important; text-decoration: none !important; color: inherit !important; display: flex !important; flex-direction: column !important; position: relative !important; }
-  .kivi-portfolio .project-card::before { content: ''; position: absolute; inset: 0; border-radius: var(--radius); opacity: 0; transition: opacity 0.3s; z-index: 0; padding: 1px; -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
-  .kivi-portfolio .project-card:hover::before { opacity: 1; }
-  .kivi-portfolio .project-card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(0,0,0,0.3); border-color: transparent !important; }
-  .kivi-portfolio .project-card:hover .card-image img { transform: scale(1.05); }
-  .kivi-portfolio .project-card[data-categories*="agents"]::before { background: var(--cat-agents); }
-  .kivi-portfolio .project-card[data-categories*="games"]::before { background: var(--cat-games); }
-  .kivi-portfolio .project-card[data-categories*="business"]::before { background: var(--cat-business); }
-  .kivi-portfolio .project-card[data-categories*="music"]::before { background: var(--cat-music); }
-  .kivi-portfolio .project-card[data-categories*="hosting"]::before { background: var(--cat-hosting); }
-  .kivi-portfolio .project-card[data-categories*="devtools"]::before { background: var(--cat-devtools); }
+  // PROJECTS GRID
+  parts.push(`<div style="padding:0 0 80px;"><div style="${S.container}"><div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.1em;color:#606078;margin-bottom:16px;">All Projects</div><div id="kp-grid" style="display:grid;grid-template-columns:var(--kp-grid-cols,repeat(3,1fr));gap:var(--kp-grid-gap,20px);width:100%;">${projectCards}</div></div></div>`);
 
-  .kivi-portfolio .card-image { position: relative !important; height: 200px !important; overflow: hidden !important; background: var(--bg-secondary) !important; }
-  .kivi-portfolio .card-image img { width: 100% !important; height: 100% !important; object-fit: cover !important; transition: transform 0.4s ease; }
-  .kivi-portfolio .card-content { padding: 24px !important; flex: 1 !important; display: flex !important; flex-direction: column !important; position: relative !important; z-index: 1 !important; }
-  .kivi-portfolio .card-content h3 { font-size: 1.15rem !important; font-weight: 700 !important; letter-spacing: -0.01em !important; margin-bottom: 8px !important; color: #f0f0f5 !important; }
-  .kivi-portfolio .card-content .tagline { color: #9090a8 !important; font-size: 0.88rem !important; margin-bottom: 16px !important; line-height: 1.5 !important; flex: 1 !important; }
-  .kivi-portfolio .card-badges { display: flex !important; flex-wrap: wrap !important; gap: 6px !important; margin-bottom: 14px !important; }
-  .kivi-portfolio .cat-badge { padding: 3px 10px !important; border-radius: 100px !important; font-size: 0.7rem !important; font-weight: 500 !important; letter-spacing: 0.02em !important; }
-  .kivi-portfolio .cat-agents { background: rgba(99, 102, 241, 0.15) !important; color: #a5b4fc !important; }
-  .kivi-portfolio .cat-games { background: rgba(236, 72, 153, 0.15) !important; color: #f9a8d4 !important; }
-  .kivi-portfolio .cat-business { background: rgba(16, 185, 129, 0.15) !important; color: #6ee7b7 !important; }
-  .kivi-portfolio .cat-music { background: rgba(245, 158, 11, 0.15) !important; color: #fcd34d !important; }
-  .kivi-portfolio .cat-hosting { background: rgba(59, 130, 246, 0.15) !important; color: #93c5fd !important; }
-  .kivi-portfolio .cat-devtools { background: rgba(249, 115, 22, 0.15) !important; color: #fdba74 !important; }
-  .kivi-portfolio .tech-pills { display: flex !important; flex-wrap: wrap !important; gap: 6px !important; }
-  .kivi-portfolio .tech-pill { padding: 3px 8px !important; border-radius: 6px !important; font-size: 0.68rem !important; font-family: 'JetBrains Mono', monospace !important; background: rgba(255,255,255,0.05) !important; color: #606078 !important; border: 1px solid rgba(255,255,255,0.06) !important; }
-  .kivi-portfolio .card-footer { padding: 16px 24px !important; border-top: 1px solid var(--border) !important; display: flex !important; justify-content: space-between !important; align-items: center !important; position: relative !important; z-index: 1 !important; }
-  .kivi-portfolio .card-stats { display: flex !important; gap: 16px !important; font-size: 0.75rem !important; color: #606078 !important; }
-  .kivi-portfolio .card-stats span { display: flex !important; align-items: center !important; gap: 4px !important; }
-  .kivi-portfolio .card-arrow { color: #606078 !important; transition: all 0.25s; }
-  .kivi-portfolio .project-card:hover .card-arrow { color: #f0f0f5 !important; transform: translateX(4px); }
+  // CTA
+  parts.push(`<div style="padding:var(--kp-cta-outer,60px 0 80px);text-align:center;"><div style="${S.container}"><div style="background:#16161f;border:1px solid #2a2a3a;border-radius:16px;padding:var(--kp-cta-pad,60px 40px);position:relative;overflow:hidden;border-top:2px solid;border-image:linear-gradient(135deg,#6366f1,#a855f7,#ec4899) 1;"><h2 style="color:#f0f0f5;${S.font}font-size:1.6rem;font-weight:700;margin:0 0 12px 0;padding:0;">Want something built?</h2><div style="color:#9090a8;margin:0 0 28px 0;padding:0;font-size:1rem;">From AI agents to full-stack apps, Kivi Media ships fast with vibe coding.</div><div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap;"><a href="https://zivraviv.com/contact" style="padding:12px 28px;border-radius:100px;font-weight:600;font-size:0.9rem;text-decoration:none;${S.font}background:linear-gradient(135deg,#6366f1,#a855f7,#ec4899);color:#fff;display:inline-block;">Talk to Ziv</a><a href="https://github.com/kivimedia" target="_blank" rel="noopener" style="padding:12px 28px;border-radius:100px;font-weight:600;font-size:0.9rem;text-decoration:none;${S.font}background:transparent;color:#9090a8;border:1px solid #2a2a3a;display:inline-block;">View GitHub</a></div></div></div></div>`);
 
-  .kivi-portfolio .card-image-placeholder { height: 200px !important; background: linear-gradient(135deg, #12121a, #16161f) !important; display: flex !important; align-items: center !important; justify-content: center !important; position: relative !important; overflow: hidden !important; }
-  .kivi-portfolio .card-image-placeholder::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(255,255,255,0.02) 10px, rgba(255,255,255,0.02) 20px); }
-  .kivi-portfolio .project-card.hidden { display: none !important; }
-  .kivi-portfolio .featured-card.hidden { display: none !important; }
-  .kivi-portfolio .featured-section.kp-hidden { display: none !important; }
+  // FOOTER
+  parts.push(`<div style="border-top:1px solid #2a2a3a;padding:32px 0;text-align:center;color:#606078;font-size:0.8rem;"><div style="${S.container}"><div style="color:#606078;margin:0;padding:0;">Built by <a href="https://zivraviv.com" style="color:#9090a8;text-decoration:none;">Kivi Media</a> &middot; Designed by AI agents &middot; Powered by vibe coding</div></div></div>`);
 
-  /* CTA */
-  .kivi-portfolio .cta-section { padding: 60px 0 80px !important; text-align: center !important; }
-  .kivi-portfolio .cta-box { background: var(--bg-card) !important; border: 1px solid var(--border) !important; border-radius: var(--radius) !important; padding: 60px 40px !important; position: relative !important; overflow: hidden !important; }
-  .kivi-portfolio .cta-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899); }
-  .kivi-portfolio .cta-box h2 { font-size: 1.6rem !important; font-weight: 700 !important; margin-bottom: 12px !important; color: #f0f0f5 !important; }
-  .kivi-portfolio .cta-box p { color: #9090a8 !important; margin-bottom: 28px !important; font-size: 1rem !important; }
-  .kivi-portfolio .cta-links { display: flex !important; justify-content: center !important; gap: 16px !important; flex-wrap: wrap !important; }
-  .kivi-portfolio .cta-link { padding: 12px 28px !important; border-radius: 100px !important; font-weight: 600 !important; font-size: 0.9rem !important; text-decoration: none !important; transition: all 0.25s; font-family: 'Outfit', sans-serif !important; }
-  .kivi-portfolio .cta-link-primary { background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899) !important; color: #fff !important; }
-  .kivi-portfolio .cta-link-primary:hover { box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4); transform: translateY(-2px); }
-  .kivi-portfolio .cta-link-secondary { background: transparent !important; color: #9090a8 !important; border: 1px solid var(--border) !important; }
-  .kivi-portfolio .cta-link-secondary:hover { border-color: var(--border-hover) !important; color: #f0f0f5 !important; transform: translateY(-2px); }
+  parts.push(`</div>`);
 
-  .kivi-portfolio .kp-footer { border-top: 1px solid var(--border) !important; padding: 32px 0 !important; text-align: center !important; color: #606078 !important; font-size: 0.8rem !important; }
-  .kivi-portfolio .kp-footer a { color: #9090a8 !important; text-decoration: none !important; }
-  .kivi-portfolio .kp-footer a:hover { color: #f0f0f5 !important; }
-
-  @media (max-width: 900px) {
-    .kivi-portfolio .projects-grid { grid-template-columns: repeat(2, 1fr) !important; }
-    .kivi-portfolio .featured-card { grid-template-columns: 1fr !important; }
-    .kivi-portfolio .featured-image { min-height: 220px !important; }
-    .kivi-portfolio .featured-content { padding: 28px !important; }
-    .kivi-portfolio .stats-bar { gap: 32px !important; }
-  }
-  @media (max-width: 600px) {
-    .kivi-portfolio .projects-grid { grid-template-columns: 1fr !important; }
-    .kivi-portfolio .stats-bar { gap: 20px !important; }
-    .kivi-portfolio .stat-number { font-size: 1.4rem !important; }
-    .kivi-portfolio .kp-hero h1 { font-size: 1.8rem !important; }
-    .kivi-portfolio .featured-content h2 { font-size: 1.3rem !important; }
-  }
-
-</style>
-
-<div class="kivi-portfolio">
-
-<div class="bg-glow bg-glow-1"></div>
-<div class="bg-glow bg-glow-2"></div>
-
-<section class="kp-hero">
-  <div class="kp-container">
-    <div class="hero-badge">
-      <span class="dot"></span>
-      ${apps.length} projects and counting
-    </div>
-    <h1>
-      Apps &amp; Projects<br>by <span class="gradient-text">Kivi Media</span>
-    </h1>
-    <p>
-      AI-powered apps, games, and business tools. Built with vibe coding, shipped fast, and designed to solve real problems.
-    </p>
-  </div>
-</section>
-
-<div class="kp-container">
-  <div class="stats-bar">
-    <div class="stat"><div class="stat-number">${apps.length}</div><div class="stat-label">Projects</div></div>
-    <div class="stat"><div class="stat-number">${liveCount}</div><div class="stat-label">Live</div></div>
-    <div class="stat"><div class="stat-number">${activeCats.length}</div><div class="stat-label">Categories</div></div>
-    <div class="stat"><div class="stat-number">20+</div><div class="stat-label">Technologies</div></div>
-  </div>
-</div>
-
-<section class="filter-section">
-  <div class="kp-container">
-    <div class="filter-bar">
-      ${filterButtons}
-    </div>
-  </div>
-</section>
-
-${featuredHtml}
-
-<section class="grid-section">
-  <div class="kp-container">
-    <div class="grid-label">All Projects</div>
-    <div class="projects-grid">
-      ${projectCards}
-    </div>
-  </div>
-</section>
-
-<section class="cta-section">
-  <div class="kp-container">
-    <div class="cta-box">
-      <h2>Want something built?</h2>
-      <p>From AI agents to full-stack apps, Kivi Media ships fast with vibe coding.</p>
-      <div class="cta-links">
-        <a href="https://zivraviv.com/contact" class="cta-link cta-link-primary">Talk to Ziv</a>
-        <a href="https://github.com/kivimedia" class="cta-link cta-link-secondary" target="_blank" rel="noopener">View GitHub</a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="kp-footer">
-  <div class="kp-container">
-    <p>Built by <a href="https://zivraviv.com">Kivi Media</a> &middot; Designed by AI agents &middot; Powered by vibe coding</p>
-  </div>
-</div>
-
-</div>
-
-<script>
-(function() {
-  var filterBtns = document.querySelectorAll('.kivi-portfolio .filter-btn');
-  var cards = document.querySelectorAll('.kivi-portfolio .project-card');
-  var featuredCard = document.querySelector('.kivi-portfolio .featured-card');
-  var featuredSection = document.getElementById('kp-featured-section');
-
-  filterBtns.forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      filterBtns.forEach(function(b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-      var filter = btn.dataset.filter;
-      cards.forEach(function(card) {
-        var cats = card.dataset.categories || '';
-        if (filter === 'all' || cats.indexOf(filter) !== -1) {
-          card.classList.remove('hidden');
-        } else {
-          card.classList.add('hidden');
-        }
-      });
-      if (featuredCard && featuredSection) {
-        var featCats = featuredCard.dataset.categories || '';
-        if (filter === 'all' || featCats.indexOf(filter) !== -1) {
-          featuredSection.classList.remove('kp-hidden');
-        } else {
-          featuredSection.classList.add('kp-hidden');
-        }
-      }
-    });
-  });
-})();
-</script>`;
+  return parts.join('');
 }
 
 // ─── Main ───────────────────────────────────────────────────────────────────
