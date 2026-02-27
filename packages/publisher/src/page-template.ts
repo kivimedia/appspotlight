@@ -260,20 +260,41 @@ function buildGlobalStyles(): string {
   .appspotlight-lightbox-close:hover {
     opacity: 1;
   }
-  /* Kill stray empty elements — Divi/WP artifacts, empty inputs, etc. */
+  /* Kill stray empty elements — scoped to content area only, never affect header/nav */
   .entry-content > div:empty,
   .entry-content input:not([type="submit"]),
   .entry-content textarea,
   .entry-content iframe:not([src*="youtube"]):not([src*="vimeo"]),
-  #et-boc .et-fb-root-ancestor,
-  .et_pb_section--absolute,
-  .et-fb-button,
-  #et_pb_layout .et_pb_module:empty {
+  #main-content .et_pb_section--absolute,
+  #main-content .et_pb_module:empty {
     display: none !important;
     visibility: hidden !important;
     width: 0 !important;
     height: 0 !important;
     overflow: hidden !important;
+  }
+  /* Protect Divi header/nav — ensure readable menu items on dark background */
+  #main-header,
+  #main-header .et_pb_menu__menu,
+  #main-header .et_pb_menu__menu nav,
+  .et-l--header {
+    visibility: visible !important;
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  #main-header a,
+  #main-header .et_pb_menu__menu a,
+  .et-l--header a {
+    color: #fff !important;
+    visibility: visible !important;
+  }
+  /* Mobile hamburger icon — ensure visible */
+  .mobile_menu_bar:before,
+  .et_pb_menu__icon {
+    color: #fff !important;
+    visibility: visible !important;
   }
   /* All buttons — base transition */
   .entry-content .wp-block-button__link {
@@ -301,7 +322,7 @@ function buildGlobalStyles(): string {
   /* ── Responsive: Mobile (≤767px) ── */
   @media (max-width: 767px) {
     .appspotlight-hero {
-      padding-top: 2.5rem !important;
+      padding-top: 3.5rem !important;
       padding-bottom: 1.5rem !important;
       padding-left: 1.25rem !important;
       padding-right: 1.25rem !important;
