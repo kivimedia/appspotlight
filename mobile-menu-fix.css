@@ -1,0 +1,39 @@
+/* Mobile Menu Fix for zivraviv.com
+ * Fixes hamburger menu dropdown being cut off on mobile
+ * Add this to WordPress > Divi > Theme Options > Custom CSS
+ * or Appearance > Customize > Additional CSS
+ */
+
+@media only screen and (max-width: 980px) {
+  /* Ensure mobile menu bar is positioned correctly */
+  .mobile_menu_bar {
+    position: relative !important;
+    z-index: 99998 !important;
+  }
+  
+  /* Fix mobile navigation dropdown positioning and visibility */
+  .et_mobile_nav_menu {
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 99999 !important;
+    background: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    max-height: calc(100vh - 60px) !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Ensure header doesn't have overflow hidden */
+  #main-header,
+  #et-top-navigation {
+    overflow: visible !important;
+  }
+  
+  /* Fix any content that might be overlapping */
+  #page-container,
+  .et_builder_inner_content {
+    position: relative !important;
+    z-index: 1 !important;
+  }
+}
