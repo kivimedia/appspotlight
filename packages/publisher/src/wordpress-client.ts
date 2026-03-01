@@ -224,3 +224,51 @@ export async function getAppsParentPageId(): Promise<number | null> {
   const page = await findPageBySlug(config.wordpress.appsParentSlug);
   return page?.id ?? null;
 }
+
+// ─── Theme Customizer ───────────────────────────────────────────────────────
+
+/**
+ * Update WordPress Customizer settings (like custom CSS).
+ * Uses the wp-json/wp/v2/settings endpoint.
+ */
+export async function updateCustomCSS(css: string): Promise<void> {
+  try {
+    // WordPress stores custom CSS in the 'custom_css_post_id' setting,
+    // but we can also use the simpler approach of updating via settings API
+    await wpFetch('/settings', {
+      method: 'POST',
+      body: { custom_css: css },
+    });
+    
+    log.info('✓ Updated WordPress custom CSS');
+  } catch (error) {
+    log.error(`Failed to update custom CSS: ${(error as Error).message}`);
+    throw error;
+  }
+}
+
+/**
+ * Append CSS to existing custom CSS (doesn't overwrite).
+ */
+export async function appendCustomCSS(newCSS: string): Promise<void> {
+  try {
+    // Fetch current settings
+    const settings = await wpFetch<{ custom_css?: string }>('/settings');
+    const existingCSS = settings.custom_css || '';
+    
+    // Check if the CSS is already present
+    if (existingCSS.includes(newCSS.trim())) {
+      log.info('Custom CSS already exists, skipping...');
+      return;
+    }
+    
+    // Append new CSS
+    const updatedCSS = existingCSS + '\n\n' + newCSS;
+    await updateCustomCSS(updatedCSS);
+    
+    log.info('✓ Appended custom CSS');
+  } catch (error) {
+    log.error(`Failed to append custom CSS: ${(error as Error).message}`);
+    throw error;
+  }
+}
